@@ -14,51 +14,36 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#pragma once
 
-#ifndef __AP_NOTIFY_H__
-#define __AP_NOTIFY_H__
+#include <AP_Common/AP_Common.h>
+#include <AP_Param/AP_Param.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
-#include <AP_Common.h>
-#include <GCS_MAVLink.h>
-#include <AP_BoardLED.h>
-#include <ToshibaLED.h>
-#include <ToshibaLED_I2C.h>
-#include <ToshibaLED_PX4.h>
-#include <ToneAlarm_PX4.h>
-#include <ToneAlarm_Linux.h>
-#include <NavioLED_I2C.h>
-#include <ExternalLED.h>
-#include <Buzzer.h>
-#include <VRBoard_LED.h>
-#include <OreoLED_PX4.h>
+#include "NotifyDevice.h"
 
 #ifndef OREOLED_ENABLED
  # define OREOLED_ENABLED   0   // set to 1 to enable OreoLEDs
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    #define CONFIG_NOTIFY_DEVICES_COUNT (3+OREOLED_ENABLED)
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2 
-    #define CONFIG_NOTIFY_DEVICES_COUNT 3
-#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    #define CONFIG_NOTIFY_DEVICES_COUNT 4
-#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-    #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
-        #define CONFIG_NOTIFY_DEVICES_COUNT 2
-    #else
-        #define CONFIG_NOTIFY_DEVICES_COUNT 3
-    #endif
-#else
-    #define CONFIG_NOTIFY_DEVICES_COUNT 2
-#endif
+// Device parameters values
+#define RGB_LED_OFF     0
+#define RGB_LED_LOW     1
+#define RGB_LED_MEDIUM  2
+#define RGB_LED_HIGH    3
 
 class AP_Notify
 {
+    friend class RGBLed;    // RGBLed needs access to notify parameters
 public:
+    // Constructor
+    AP_Notify();
+
     /// notify_flags_type - bitmask of notification flags
     struct notify_flags_type {
         uint32_t initialising       : 1;    // 1 if initialising and copter should not be moved
         uint32_t gps_status         : 3;    // 0 = no gps, 1 = no lock, 2 = 2d lock, 3 = 3d lock, 4 = dgps lock, 5 = rtk lock
+        uint32_t gps_num_sats       : 6;    // number of sats
         uint32_t armed              : 1;    // 0 = disarmed, 1 = armed
         uint32_t pre_arm_check      : 1;    // 0 = failing checks, 1 = passed
         uint32_t pre_arm_gps_check  : 1;    // 0 = failing pre-arm GPS checks, 1 = passed
@@ -69,10 +54,13 @@ public:
         uint32_t parachute_release  : 1;    // 1 if parachute is being released
         uint32_t ekf_bad            : 1;    // 1 if ekf is reporting problems
         uint32_t autopilot_mode     : 1;    // 1 if vehicle is in an autopilot flight mode (only used by OreoLEDs)
+        uint32_t firmware_update    : 1;    // 1 just before vehicle firmware is updated
+        uint32_t compass_cal_running: 1;    // 1 if a compass calibration is running
 
         // additional flags
         uint32_t external_leds      : 1;    // 1 if external LEDs are enabled (normally only used for copter)
         uint32_t vehicle_lost       : 1;    // 1 when lost copter tone is requested (normally only used for copter)
+        uint32_t waiting_for_throw  : 1;    // 1 when copter is in THROW mode and waiting to detect the user hand launch
     };
 
     /// notify_events_type - bitmask of active events.
@@ -87,7 +75,10 @@ public:
         uint16_t autotune_next_axis     : 1;    // 1 when autotune has completed one axis and is moving onto the next
         uint16_t mission_complete       : 1;    // 1 when the mission has completed successfully
         uint16_t waypoint_complete      : 1;    // 1 as vehicle completes a waypoint
-        uint16_t firmware_update        : 1;    // 1 just before vehicle firmware is updated
+        uint16_t initiated_compass_cal  : 1;    // 1 when user input to begin compass cal was accepted
+        uint16_t compass_cal_saved      : 1;    // 1 when compass calibration was just saved
+        uint16_t compass_cal_failed     : 1;    // 1 when compass calibration has just failed
+        uint16_t compass_cal_canceled   : 1;    // 1 when compass calibration was just canceled
     };
 
     // the notify flags are static to allow direct class access
@@ -104,8 +95,10 @@ public:
     // handle a LED_CONTROL message
     static void handle_led_control(mavlink_message_t* msg);
 
-private:
-    static NotifyDevice* _devices[CONFIG_NOTIFY_DEVICES_COUNT];
-};
+    static const struct AP_Param::GroupInfo var_info[];
 
-#endif    // __AP_NOTIFY_H__
+private:
+    static NotifyDevice* _devices[];
+
+    AP_Int8 _rgb_led_brightness;
+};

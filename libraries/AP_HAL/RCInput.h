@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_RC_INPUT_H__
-#define __AP_HAL_RC_INPUT_H__
+#pragma once
 
 #include "AP_HAL_Namespace.h"
 
@@ -15,7 +13,8 @@ public:
      * known to the programmer. (Its too difficult to describe this dependency
      * in the C++ type system.)
      */
-    virtual void init(void* implspecific) = 0;
+    virtual void init() = 0;
+    virtual void deinit() {};
 
     /**
      * Return true if there has been new input since the last read()
@@ -55,6 +54,3 @@ public:
     /* execute receiver bind */
     virtual bool rc_bind(int dsmMode) { return false; };
 };
-
-#endif // __AP_HAL_RC_INPUT_H__
-

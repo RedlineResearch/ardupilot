@@ -13,13 +13,11 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#pragma once
 
-#ifndef VECTORN_H
-#define VECTORN_H
-
-#include <math.h>
+#include <cmath>
 #include <string.h>
-#if defined(MATH_CHECK_INDEXES) && (MATH_CHECK_INDEXES == 1)
+#if MATH_CHECK_INDEXES
 #include <assert.h>
 #endif
 
@@ -33,14 +31,14 @@ public:
     }
 
     inline T & operator[](uint8_t i) {
-#if defined(MATH_CHECK_INDEXES) && (MATH_CHECK_INDEXES == 1)
+#if MATH_CHECK_INDEXES
         assert(i >= 0 && i < N);
 #endif
         return _v[i];
     }
 
     inline const T & operator[](uint8_t i) const {
-#if defined(MATH_CHECK_INDEXES) && (MATH_CHECK_INDEXES == 1)
+#if MATH_CHECK_INDEXES
         assert(i >= 0 && i < N);
 #endif
         return _v[i];
@@ -140,5 +138,3 @@ public:
 private:
     T _v[N];
 };
-
-#endif // VECTORN_H

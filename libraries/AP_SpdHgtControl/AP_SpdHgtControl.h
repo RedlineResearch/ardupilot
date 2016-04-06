@@ -1,4 +1,5 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+#pragma once
 
 /// @file    AP_SpdHgtControl.h
 /// @brief   generic speed & height controller interface
@@ -10,12 +11,9 @@
   own class.
  */
 
-#ifndef AP_SPDHGTCONTROL_H
-#define AP_SPDHGTCONTROL_H
-
-#include <AP_Common.h>
-#include <AP_Param.h>
-#include <DataFlash.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Param/AP_Param.h>
+#include <DataFlash/DataFlash.h>
 
 class AP_SpdHgtControl {
 public:
@@ -29,10 +27,13 @@ public:
 	   prioritise height or speed
 	 */
 	enum FlightStage {
-		FLIGHT_NORMAL        = 1,
-		FLIGHT_TAKEOFF       = 2,
-		FLIGHT_LAND_APPROACH = 3,
-		FLIGHT_LAND_FINAL    = 4
+		FLIGHT_TAKEOFF       = 1,
+        FLIGHT_VTOL          = 2,
+        FLIGHT_NORMAL        = 3,
+		FLIGHT_LAND_APPROACH = 4,
+		FLIGHT_LAND_PREFLARE = 5,
+        FLIGHT_LAND_FINAL    = 6,
+        FLIGHT_LAND_ABORT    = 7
 	};
 
 	// Update of the pitch and throttle demands
@@ -40,6 +41,8 @@ public:
 	virtual void update_pitch_throttle( int32_t hgt_dem_cm,
 										int32_t EAS_dem_cm,
 										enum FlightStage flight_stage,
+                                        bool is_doing_auto_land,
+                                        float distance_beyond_land_wp,
 										int32_t ptchMinCO_cd,
 										int16_t throttle_nudge,
                                         float hgt_afe,
@@ -68,6 +71,9 @@ public:
 	// return landing sink rate
 	virtual float get_land_sinkrate(void) const = 0;
 
+	// set path_proportion accessor
+    virtual void set_path_proportion(float path_proportion) = 0;
+
 	// add new controllers to this enum. Users can then
 	// select which controller to use by setting the
 	// SPDHGT_CONTROLLER parameter
@@ -77,6 +83,3 @@ public:
 	
 
 };
-
-
-#endif // AP_SPDHGTCONTROL_H

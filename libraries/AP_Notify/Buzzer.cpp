@@ -15,10 +15,10 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include <AP_HAL.h>
-
 #include "Buzzer.h"
+
+#include <AP_HAL/AP_HAL.h>
+
 #include "AP_Notify.h"
 
 extern const AP_HAL::HAL& hal;
@@ -97,11 +97,11 @@ void Buzzer::update()
             case ARMING_BUZZ:
                 // record start time
                 if (_pattern_counter == 1) {
-                    _arming_buzz_start_ms = hal.scheduler->millis();
+                    _arming_buzz_start_ms = AP_HAL::millis();
                     on(true);
                 } else {
                     // turn off buzzer after 3 seconds
-                    if (hal.scheduler->millis() - _arming_buzz_start_ms >= BUZZER_ARMING_BUZZ_MS) {
+                    if (AP_HAL::millis() - _arming_buzz_start_ms >= BUZZER_ARMING_BUZZ_MS) {
                         _arming_buzz_start_ms = 0;
                         on(false);
                         _pattern = NONE;

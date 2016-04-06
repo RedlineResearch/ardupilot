@@ -15,11 +15,9 @@
 /*
   Flymaple port by Mike McCauley
  */
+#pragma once
 
-#ifndef __AP_HAL_FLYMAPLE_ANALOGIN_H__
-#define __AP_HAL_FLYMAPLE_ANALOGIN_H__
-
-#include <AP_HAL_FLYMAPLE.h>
+#include "AP_HAL_FLYMAPLE.h"
 
 #define FLYMAPLE_INPUT_MAX_CHANNELS 12
 
@@ -82,7 +80,7 @@ private:
 class AP_HAL_FLYMAPLE_NS::FLYMAPLEAnalogIn : public AP_HAL::AnalogIn {
 public:
     FLYMAPLEAnalogIn();
-    void init(void* implspecific);
+    void init();
     AP_HAL::AnalogSource* channel(int16_t n);
     float board_voltage(void);
 
@@ -101,4 +99,3 @@ private:
     // divider (25k/5k) 
     FLYMAPLEAnalogSource _vcc;
 };
-#endif // __AP_HAL_FLYMAPLE_ANALOGIN_H__

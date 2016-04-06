@@ -15,11 +15,9 @@
 /*
   Flymaple port by Mike McCauley
  */
+#pragma once
 
-#ifndef __AP_HAL_FLYMAPLE_SEMAPHORE_H__
-#define __AP_HAL_FLYMAPLE_SEMAPHORE_H__
-
-#include <AP_HAL_FLYMAPLE.h>
+#include "AP_HAL_FLYMAPLE.h"
 
 class AP_HAL_FLYMAPLE_NS::FLYMAPLESemaphore : public AP_HAL::Semaphore {
 public:
@@ -33,5 +31,3 @@ private:
 
     bool _taken;
 };
-
-#endif // __AP_HAL_FLYMAPLE_SEMAPHORE_H__

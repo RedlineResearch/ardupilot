@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_RC_OUTPUT_H__
-#define __AP_HAL_RC_OUTPUT_H__
+#pragma once
 
 #include "AP_HAL_Namespace.h"
 
@@ -32,7 +30,7 @@
 
 class AP_HAL::RCOutput {
 public:
-    virtual void init(void* implspecific) = 0;
+    virtual void init() = 0;
 
     /* Output freq (1/period) control */
     virtual void     set_freq(uint32_t chmask, uint16_t freq_hz) = 0;
@@ -43,14 +41,41 @@ public:
     virtual void     enable_ch(uint8_t ch) = 0;
     virtual void     disable_ch(uint8_t ch) = 0;
 
-    /* Output, either single channel or bulk array of channels */
+    /*
+     * Output a single channel, possibly grouped with previous writes if
+     * cork() has been called before.
+     */
     virtual void     write(uint8_t ch, uint16_t period_us) = 0;
-    virtual void     write(uint8_t ch, uint16_t* period_us, uint8_t len) = 0;
+
+    /*
+     * Delay subsequent calls to write() going to the underlying hardware in
+     * order to group related writes together. When all the needed writes are
+     * done, call push() to commit the changes.
+     *
+     * This method is optional: if the subclass doesn't implement it all calls
+     * to write() are synchronous.
+     */
+    virtual void     cork() { }
+
+    /*
+     * Push pending changes to the underlying hardware. All changes between a
+     * call to cork() and push() are pushed together in a single transaction.
+     *
+     * This method is optional: if the subclass doesn't implement it all calls
+     * to write() are synchronous.
+     */
+    virtual void     push() { }
 
     /* Read back current output state, as either single channel or
-     * array of channels. */
+     * array of channels. On boards that have a separate IO controller,
+     * this returns the latest output value that the IO controller has
+     * reported */
     virtual uint16_t read(uint8_t ch) = 0;
     virtual void     read(uint16_t* period_us, uint8_t len) = 0;
+
+    /* Read the current input state. This returns the last value that was written. */
+    virtual uint16_t read_last_sent(uint8_t ch) { return read(ch); }
+    virtual void     read_last_sent(uint16_t* period_us, uint8_t len) { read(period_us, len); };
 
     /*
       set PWM to send to a set of channels when the safety switch is
@@ -83,6 +108,3 @@ public:
      */
     virtual void     set_esc_scaling(uint16_t min_pwm, uint16_t max_pwm) {}
 };
-
-#endif // __AP_HAL_RC_OUTPUT_H__
-

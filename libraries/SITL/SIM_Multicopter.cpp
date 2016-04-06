@@ -17,77 +17,77 @@
   multicopter simulator class
 */
 
-#include <AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "SIM_Multicopter.h"
+#include <AP_Motors/AP_Motors.h>
+
 #include <stdio.h>
 
-Motor m(90,  false,  1);
+using namespace SITL;
 
-static const Motor quad_plus_motors[4] =
+static const Motor quad_plus_motors[] =
 {
-    Motor(90,  false,  1),
-    Motor(270, false,  2),
-    Motor(0,   true,   3),
-    Motor(180, true,   4)
+    Motor(AP_MOTORS_MOT_1,  90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2),
+    Motor(AP_MOTORS_MOT_2, -90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4),
+    Motor(AP_MOTORS_MOT_3,   0, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1),
+    Motor(AP_MOTORS_MOT_4, 180, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3),
 };
 
-static const Motor quad_x_motors[4] =
+static const Motor quad_x_motors[] =
 {
-    Motor(45,  false,  1),
-    Motor(225, false,  2),
-    Motor(315, true,   3),
-    Motor(135, true,   4)
+    Motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1),
+    Motor(AP_MOTORS_MOT_2, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3),
+    Motor(AP_MOTORS_MOT_3,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4),
+    Motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2),
 };
 
-static const Motor hexa_motors[6] =
+static const Motor hexa_motors[] =
 {
-    Motor(60,   false, 1),
-    Motor(60,   true,  7),
-    Motor(180,  true,  4),
-    Motor(180,  false, 8),
-    Motor(-60,  true,  2),
-    Motor(-60,  false, 3),
+    Motor(AP_MOTORS_MOT_1,   0, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1),
+    Motor(AP_MOTORS_MOT_2, 180, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4),
+    Motor(AP_MOTORS_MOT_3,-120, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  5),
+    Motor(AP_MOTORS_MOT_4,  60, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2),
+    Motor(AP_MOTORS_MOT_5, -60, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 6),
+    Motor(AP_MOTORS_MOT_6, 120, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3)
 };
 
-static const Motor hexax_motors[6] =
+static const Motor hexax_motors[] =
 {
-    Motor(30,  false,  7),
-    Motor(90,  true,   1),
-    Motor(150, false,  4),
-    Motor(210, true,   8),
-    Motor(270, false,  2),
-    Motor(330, true,   3)
+    Motor(AP_MOTORS_MOT_1,  90, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2),
+    Motor(AP_MOTORS_MOT_2, -90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 5),
+    Motor(AP_MOTORS_MOT_3, -30, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  6),
+    Motor(AP_MOTORS_MOT_4, 150, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3),
+    Motor(AP_MOTORS_MOT_5,  30, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1),
+    Motor(AP_MOTORS_MOT_6,-150, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4)
 };
 
-static const Motor octa_motors[8] =
+static const Motor octa_motors[] =
 {
-    Motor(0,    true,  1),
-    Motor(180,  true,  2),
-    Motor(45,   false, 3),
-    Motor(135,  false, 4),
-    Motor(-45,  false, 5),
-    Motor(-135, false, 6),
-    Motor(270,  true,  7),
-    Motor(90,   true,  8)
+    Motor(AP_MOTORS_MOT_1,    0,  AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1),
+    Motor(AP_MOTORS_MOT_2,  180,  AP_MOTORS_MATRIX_YAW_FACTOR_CW,  5),
+    Motor(AP_MOTORS_MOT_3,   45,  AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2),
+    Motor(AP_MOTORS_MOT_4,  135,  AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4),
+    Motor(AP_MOTORS_MOT_5,  -45,  AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 8),
+    Motor(AP_MOTORS_MOT_6, -135,  AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 6),
+    Motor(AP_MOTORS_MOT_7,  -90,  AP_MOTORS_MATRIX_YAW_FACTOR_CW,  7),
+    Motor(AP_MOTORS_MOT_8,   90,  AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3)
 };
 
-static const Motor octa_quad_motors[8] =
+static const Motor octa_quad_motors[] =
 {
-    Motor(  45, false, 1),
-    Motor( -45, true,  2),
-    Motor(-135, false, 3),
-    Motor( 135, true,  4),
-    Motor( -45, false, 5),
-    Motor(  45, true,  6),
-    Motor( 135, false, 7),
-    Motor(-135, true,  8)
+    Motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1),
+    Motor(AP_MOTORS_MOT_2,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  7),
+    Motor(AP_MOTORS_MOT_3, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 5),
+    Motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3),
+    Motor(AP_MOTORS_MOT_5,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 8),
+    Motor(AP_MOTORS_MOT_6,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2),
+    Motor(AP_MOTORS_MOT_7,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4),
+    Motor(AP_MOTORS_MOT_8, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  6)
 };
 
 /*
   table of supported frame types
  */
-static const Frame supported_frames[] =
+static Frame supported_frames[] =
 {
     Frame("+",         4, quad_plus_motors),
     Frame("quad",      4, quad_plus_motors),
@@ -99,131 +99,120 @@ static const Frame supported_frames[] =
     Frame("octa-quad", 8, octa_quad_motors)
 };
 
-/*
-  constructor
- */
-MultiCopter::MultiCopter(const char *home_str, const char *frame_str) :
-    Aircraft(home_str, frame_str),
-    frame(NULL),
-    hover_throttle(0.51),
-    terminal_velocity(15.0),
-    terminal_rotation_rate(4*radians(360.0))
+void Frame::init(float _mass, float hover_throttle, float _terminal_velocity, float _terminal_rotation_rate)
 {
-    for (uint8_t i=0; i<sizeof(supported_frames)/sizeof(supported_frames[0]); i++) {
-        if (strcasecmp(frame_str, supported_frames[i].name) == 0) {
-            frame = &supported_frames[i];
-        }
-    }
-    if (frame == NULL) {
-        printf("Frame '%s' not found", frame_str);
-        exit(1);
-    }
+    mass = _mass;
+
     /*
        scaling from total motor power to Newtons. Allows the copter
        to hover against gravity when each motor is at hover_throttle
     */
-    mass = 1.5;
-    thrust_scale = (mass * GRAVITY_MSS) / (frame->num_motors * hover_throttle);
+    thrust_scale = (mass * GRAVITY_MSS) / (num_motors * hover_throttle);
 
+    terminal_velocity = _terminal_velocity;
+    terminal_rotation_rate = _terminal_rotation_rate;
+}
+
+/*
+  find a frame by name
+ */
+Frame *Frame::find_frame(const char *name)
+{
+    for (uint8_t i=0; i < ARRAY_SIZE(supported_frames); i++) {
+        if (strcasecmp(name, supported_frames[i].name) == 0) {
+            return &supported_frames[i];
+        }
+    }
+    return NULL;
+}
+
+MultiCopter::MultiCopter(const char *home_str, const char *frame_str) :
+    Aircraft(home_str, frame_str),
+    frame(NULL)
+{
+    frame = Frame::find_frame(frame_str);
+    if (frame == NULL) {
+        printf("Frame '%s' not found", frame_str);
+        exit(1);
+    }
+    frame->init(1.5, 0.51, 15, 4*radians(360));
     frame_height = 0.1;
 }
 
+// calculate rotational and linear accelerations
+void Frame::calculate_forces(const Aircraft &aircraft,
+                             const Aircraft::sitl_input &input,
+                             Vector3f &rot_accel,
+                             Vector3f &body_accel)
+{
+    // rotational acceleration, in rad/s/s, in body frame
+    float thrust = 0.0f; // newtons
+
+    for (uint8_t i=0; i<num_motors; i++) {
+        float motor_speed = constrain_float((input.servos[motor_offset+motors[i].servo]-1100)/900.0, 0, 1);
+        rot_accel.x  += -radians(5000.0) * sinf(radians(motors[i].angle)) * motor_speed;
+        rot_accel.y  +=  radians(5000.0) * cosf(radians(motors[i].angle)) * motor_speed;
+        rot_accel.z += motors[i].yaw_factor * motor_speed * radians(400.0);
+        thrust += motor_speed * thrust_scale; // newtons
+    }
+
+    body_accel = Vector3f(0, 0, -thrust / mass);
+
+    if (terminal_rotation_rate > 0) {
+        // rotational air resistance
+        const Vector3f &gyro = aircraft.get_gyro();
+        rot_accel.x -= gyro.x * radians(400.0) / terminal_rotation_rate;
+        rot_accel.y -= gyro.y * radians(400.0) / terminal_rotation_rate;
+        rot_accel.z -= gyro.z * radians(400.0) / terminal_rotation_rate;
+    }
+
+    if (terminal_velocity > 0) {
+        // air resistance
+        Vector3f air_resistance = -aircraft.get_velocity_ef() * (GRAVITY_MSS/terminal_velocity);
+        body_accel += aircraft.get_dcm().transposed() * air_resistance;
+    }
+
+    // add some noise
+    const float gyro_noise = radians(0.1);
+    const float accel_noise = 0.3;
+    const float noise_scale = thrust / (thrust_scale * num_motors);
+    rot_accel += Vector3f(aircraft.rand_normal(0, 1),
+                          aircraft.rand_normal(0, 1),
+                          aircraft.rand_normal(0, 1)) * gyro_noise * noise_scale;
+    body_accel += Vector3f(aircraft.rand_normal(0, 1),
+                           aircraft.rand_normal(0, 1),
+                           aircraft.rand_normal(0, 1)) * accel_noise * noise_scale;
+}
+
+// calculate rotational and linear accelerations
+void MultiCopter::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel)
+{
+    frame->calculate_forces(*this, input, rot_accel, body_accel);
+}
+    
 /*
   update the multicopter simulation by one time step
  */
 void MultiCopter::update(const struct sitl_input &input)
 {
-    float motor_speed[frame->num_motors];
-
-    for (uint8_t i=0; i<frame->num_motors; i++) {
-        uint16_t servo = input.servos[frame->motors[i].servo-1];
-        // assume 1000 to 2000 PWM range
-        if (servo <= 1000) {
-            motor_speed[i] = 0;
-        } else {
-            motor_speed[i] = (servo-1000) / 1000.0f;
-        }
-    }
-
     // how much time has passed?
-    float delta_time = frame_time_us * 1.0e-6f;
-
-    // rotational acceleration, in rad/s/s, in body frame
     Vector3f rot_accel;
-    float thrust = 0.0f; // newtons
 
-    for (uint8_t i=0; i<frame->num_motors; i++) {
-        rot_accel.x  += -radians(5000.0) * sinf(radians(frame->motors[i].angle)) * motor_speed[i];
-        rot_accel.y  +=  radians(5000.0) * cosf(radians(frame->motors[i].angle)) * motor_speed[i];
-        if (frame->motors[i].clockwise) {
-            rot_accel.z -= motor_speed[i] * radians(400.0);
-        } else {
-            rot_accel.z += motor_speed[i] * radians(400.0);
-        }
-        thrust += motor_speed[i] * thrust_scale; // newtons
-    }
+    calculate_forces(input, rot_accel, accel_body);
 
-    // rotational air resistance
-    rot_accel.x -= gyro.x * radians(5000.0) / terminal_rotation_rate;
-    rot_accel.y -= gyro.y * radians(5000.0) / terminal_rotation_rate;
-    rot_accel.z -= gyro.z * radians(400.0)  / terminal_rotation_rate;
+    update_dynamics(rot_accel);
 
-    // update rotational rates in body frame
-    gyro += rot_accel * delta_time;
-
-    // update attitude
-    dcm.rotate(gyro * delta_time);
-    dcm.normalize();
-
-    // air resistance
-    Vector3f air_resistance = -velocity_ef * (GRAVITY_MSS/terminal_velocity);
-
-    accel_body = Vector3f(0, 0, -thrust / mass);
-    Vector3f accel_earth = dcm * accel_body;
-
-    accel_earth += Vector3f(0, 0, GRAVITY_MSS);
-    accel_earth += air_resistance;
-
-    // if we're on the ground, then our vertical acceleration is limited
-    // to zero. This effectively adds the force of the ground on the aircraft
-    if (on_ground(position) && accel_earth.z > 0) {
-        accel_earth.z = 0;
-    }
-
-    // work out acceleration as seen by the accelerometers. It sees the kinematic
-    // acceleration (ie. real movement), plus gravity
-    accel_body = dcm.transposed() * (accel_earth + Vector3f(0, 0, -GRAVITY_MSS));
-
-    // add some noise
-    add_noise(thrust / (thrust_scale * frame->num_motors));
-
-    // new velocity vector
-    velocity_ef += accel_earth * delta_time;
-
-    // new position vector
-    Vector3f old_position = position;
-    position += velocity_ef * delta_time;
-
-    // assume zero wind for now
-    airspeed = velocity_ef.length();
-
-    // constrain height to the ground
     if (on_ground(position)) {
-        if (!on_ground(old_position)) {
-            printf("Hit ground at %f m/s\n", velocity_ef.z);
+        // zero roll/pitch, but keep yaw
+        float r, p, y;
+        dcm.to_euler(&r, &p, &y);
+        dcm.from_euler(0, 0, y);
 
-            velocity_ef.zero();
-
-            // zero roll/pitch, but keep yaw
-            float r, p, y;
-            dcm.to_euler(&r, &p, &y);
-            dcm.from_euler(0, 0, y);
-
-            position.z = -(ground_level + frame_height - home.alt*0.01f);
-        }
+        position.z = -(ground_level + frame_height - home.alt*0.01f);
     }
-
+    
     // update lat/lon/altitude
     update_position();
 }
-#endif // CONFIG_HAL_BOARD
+
+

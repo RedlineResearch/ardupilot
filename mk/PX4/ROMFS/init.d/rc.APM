@@ -56,13 +56,19 @@ then
      echo "Created APM directory"
 fi
 
-if [ -f /bin/lsm303d ]
+if [ -f /bin/px4io ]
 then
+  if [ -f /bin/lsm303d ]
+  then
      echo "Detected FMUv2 board"
      set BOARD FMUv2
-else
+  else
      echo "Detected FMUv1 board"
      set BOARD FMUv1
+  fi
+else
+  echo "Detected FMUv4 board"
+  set BOARD FMUv4   
 fi
 
 if [ $BOARD == FMUv1 ]
@@ -108,16 +114,17 @@ then
     mkblctrl -mkmode x -d /dev/pwm_output
 fi
 
-
-echo "Trying PX4IO board"
-
-# try the px4io start twice. Some FMUv2 board don't
-# come up the first time
-set HAVE_PX4IO false
-if px4io start norc
+if [ -f /bin/px4io ]
 then
+  echo "Trying PX4IO board"
+
+  # try the px4io start twice. Some FMUv2 board don't
+  # come up the first time
+  set HAVE_PX4IO false
+  if px4io start norc
+  then
     set HAVE_PX4IO true
-else
+  else
     # it may be in bootloader mode
     echo Loading /etc/px4io/px4io.bin
     tone_alarm MBABGP
@@ -134,8 +141,12 @@ else
     then
         set HAVE_PX4IO true
         # play happy tune again
-	tone_alarm start
+	tone_alarm 1
     fi
+  fi
+else
+    set HAVE_PX4IO false
+    echo "No PX4IO support"
 fi
 
 if [ $HAVE_PX4IO == true ]
@@ -200,6 +211,41 @@ else
 fi
 
 
+if mtd start /fs/mtd
+then
+    echo "started mtd driver OK"
+else
+    echo "failed to start mtd driver"
+    echo "failed to start mtd driver" >> $logfile
+    sh /etc/init.d/rc.error           
+fi
+
+if mtd readtest /fs/mtd
+then
+    echo "mtd readtest OK"
+else
+    echo "failed to read mtd"
+    echo "failed to read mtd" >> $logfile
+    sh /etc/init.d/rc.error           
+fi
+
+if [ $BOARD == FMUv2 -o $BOARD == FMUv4 ]
+then
+  # the ramtron on FMUv2 is very fast and can handle trillions of
+  # writes. This full rw test on each boot ensures it is working
+  # properly. We have one board that failed this, so
+  # the test is arguably worth having
+  if mtd rwtest /fs/mtd
+  then
+    echo "mtd rwtest OK"
+  else
+    echo "failed to test mtd"
+    echo "failed to test mtd" >> $logfile
+    sh /etc/init.d/rc.error           
+  fi
+fi
+
+
 echo "Starting APM sensors"
 
 if ms5611 start
@@ -222,13 +268,17 @@ fi
 if [ $BOARD == FMUv1 ]
 then
     echo "Starting FMUv1 sensors"
-    if hmc5883 -C -T start
+    if hmc5883 -C -T -X start
     then
-        echo "hmc5883 started OK"
+        echo "Have external hmc5883"
     else
-        echo "hmc5883 start failed"
-        echo "hmc5883 start failed" >> $logfile
-        sh /etc/init.d/rc.error
+        echo "No external hmc5883"
+    fi
+    if hmc5883 -C -T -I  start
+    then
+        echo "Have internal hmc5883"
+    else
+        echo "No internal hmc5883"
     fi
     if mpu6000 start
     then
@@ -243,7 +293,10 @@ then
        echo "No l3gd20"
        echo "No l3gd20" >> $logfile
     fi
-else
+fi
+
+if [ $BOARD == FMUv2 ]
+then
     echo "Starting FMUv2 sensors"
     if hmc5883 -C -T -X start
     then
@@ -264,8 +317,14 @@ else
        echo "Found MPU6000 external"
        set HAVE_FMUV3 true
     else
-       echo "No MPU6000 external"
-       set HAVE_FMUV3 false
+       if mpu9250 -X -R 4 start
+       then
+           echo "Found MPU9250 external"
+           set HAVE_FMUV3 true
+       else
+           echo "No MPU6000 or MPU9250 external"
+           set HAVE_FMUV3 false
+       fi
     fi
     if [ $HAVE_FMUV3 == true ]
     then
@@ -290,9 +349,14 @@ else
         then
                echo "Found MPU6000 internal"
         else
-               echo "No MPU6000"
-               echo "No MPU6000" >> $logfile
+           if mpu9250 -R 14 start
+           then
+               echo "Found MPU9250 internal"
+           else
+               echo "No MPU6000 or MPU9250"
+               echo "No MPU6000 or MPU9250" >> $logfile
                sh /etc/init.d/rc.error
+           fi
         fi
         if hmc5883 -C -T -S -R 8 start
         then
@@ -303,8 +367,13 @@ else
         then
                echo "Found MPU6000"
         else
-               echo "No MPU6000"
-               echo "No MPU6000" >> $logfile
+               if mpu9250 start
+               then
+                   echo "Found MPU9250"
+               else
+                   echo "No MPU6000 or MPU9250"
+                   echo "No MPU9250" >> $logfile
+               fi
         fi
         if l3gd20 start
         then
@@ -321,6 +390,34 @@ else
     fi
 fi
 
+
+if [ $BOARD == FMUv4 ]
+then
+    echo "Starting FMUv4 sensors"
+    if hmc5883 -C -T -X start
+    then
+        echo "Have external hmc5883"
+    else
+        echo "No external hmc5883"
+    fi
+    if hmc5883 -C -T -S -R 2 start
+    then
+        echo "Have SPI hmc5883"
+    else
+        echo "No SPI hmc5883"
+    fi
+
+    if mpu6000 -R 2 -T 20608 start
+    then
+       echo "Found ICM-20608 internal"
+    fi
+
+    if mpu9250 -R 2 start
+    then
+       echo "Found mpu9250 internal"
+    fi
+fi
+
 # optional ETS airspeed sensor
 if ets_airspeed start
 then
@@ -330,6 +427,11 @@ fi
 if meas_airspeed start
 then
     echo "Found MEAS airspeed sensor"
+else
+    if meas_airspeed start -b 2
+    then
+        echo "Found MEAS airspeed sensor (bus2)"
+    fi
 fi
 
 # optional Range Finder sensor
@@ -354,9 +456,12 @@ then
 fi
 
 # optional PX4Flow sensor
-if px4flow start
+if [ -f /bin/px4flow ]
 then
+  if px4flow start
+  then
     echo "Found px4flow sensor"
+  fi
 fi
 
 # optional PWM input driver
@@ -365,34 +470,13 @@ then
     echo "started pwm_input driver"
 fi
 
-echo "Trying PX4IO board"
-
-if mtd start /fs/mtd
+# optional oreo leds
+if [ -f /bin/oreoled ]
 then
-    echo "started mtd driver OK"
-else
-    echo "failed to start mtd driver"
-    echo "failed to start mtd driver" >> $logfile
-    sh /etc/init.d/rc.error           
-fi
-
-if mtd readtest /fs/mtd
-then
-    echo "mtd readtest OK"
-else
-    echo "failed to read mtd"
-    echo "failed to read mtd" >> $logfile
-    sh /etc/init.d/rc.error           
-fi
-
-if [ -f /bin/uavcan ]
-then
-    if uavcan start 1
-    then
-        echo "started uavcan OK"
-    else
-        echo "failed to start uavcan"
-    fi
+  if oreoled start autoupdate
+  then
+    echo "oreoled started OK"
+  fi
 fi
 
 # optional smbus battery monitor
@@ -401,26 +485,10 @@ then
     echo "Found batt_smbus"
 fi
 
-# optional oreo leds
-if oreoled start
+# optional irlock
+if irlock start
 then
-    echo "oreoled started OK"
-fi
-
-if [ $BOARD == FMUv2 ]
-then
-  # the ramtron on FMUv2 is very fast and can handle trillions of
-  # writes. This full rw test on each boot ensures it is working
-  # properly. We have one board that failed this, so
-  # the test is arguably worth having
-  if mtd rwtest /fs/mtd
-  then
-    echo "mtd rwtest OK"
-  else
-    echo "failed to test mtd"
-    echo "failed to test mtd" >> $logfile
-    sh /etc/init.d/rc.error           
-  fi
+    echo "irlock started"
 fi
 
 echo Starting ArduPilot $deviceA $deviceC $deviceD

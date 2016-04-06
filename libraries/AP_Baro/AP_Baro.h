@@ -1,27 +1,18 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+#pragma once
 
-#ifndef __AP_BARO_H__
-#define __AP_BARO_H__
-
-#include <AP_HAL.h>
-#include <AP_Param.h>
-#include <Filter.h>
-#include <DerivativeFilter.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Param/AP_Param.h>
+#include <Filter/Filter.h>
+#include <Filter/DerivativeFilter.h>
+#include <AP_Buffer/AP_Buffer.h>
 
 // maximum number of sensor instances
-#if HAL_CPU_CLASS == HAL_CPU_CLASS_16
-#define BARO_MAX_INSTANCES 1
-#else
-#define BARO_MAX_INSTANCES 2
-#endif
+#define BARO_MAX_INSTANCES 3
 
 // maximum number of drivers. Note that a single driver can provide
 // multiple sensor instances
-#if HAL_CPU_CLASS == HAL_CPU_CLASS_16
-#define BARO_MAX_DRIVERS 1
-#else
 #define BARO_MAX_DRIVERS 2
-#endif
 
 class AP_Baro_Backend;
 
@@ -117,6 +108,12 @@ public:
     // HIL (and SITL) interface, setting pressure and temperature
     void setHIL(uint8_t instance, float pressure, float temperature);
 
+    // HIL variables
+    struct {
+        AP_Buffer<float,10> press_buffer;
+        AP_Buffer<float,10> temp_buffer;
+    } _hil;
+
     // register a new sensor, claiming a sensor slot. If we are out of
     // slots it will panic
     uint8_t register_sensor(void);
@@ -150,7 +147,9 @@ private:
         AP_Float ground_pressure;
     } sensors[BARO_MAX_INSTANCES];
 
-    AP_Int8                             _alt_offset;
+    AP_Float                            _alt_offset;
+    float                               _alt_offset_active;
+    AP_Int8                             _primary_baro; // primary chosen by user
     float                               _last_altitude_EAS2TAS;
     float                               _EAS2TAS;
     float                               _external_temperature;
@@ -158,13 +157,8 @@ private:
     DerivativeFilterFloat_Size7         _climb_rate_filter;
     bool                                _hil_mode:1;
 
+    // when did we last notify the GCS of new pressure reference?
+    uint32_t                            _last_notify_ms;
+
     void SimpleAtmosphere(const float alt, float &sigma, float &delta, float &theta);
 };
-
-#include "AP_Baro_Backend.h"
-#include "AP_Baro_MS5611.h"
-#include "AP_Baro_BMP085.h"
-#include "AP_Baro_HIL.h"
-#include "AP_Baro_PX4.h"
-
-#endif // __AP_BARO_H__

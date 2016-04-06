@@ -6,17 +6,17 @@
   Andrew Tridgell November 2011
  */
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
-#include <AP_HAL_SITL.h>
+#include "AP_HAL_SITL.h"
 #include "AP_HAL_SITL_Namespace.h"
 #include "HAL_SITL_Class.h"
 
-#include <AP_Math.h>
-#include "../AP_Compass/AP_Compass.h"
-#include "../AP_Declination/AP_Declination.h"
-#include "../SITL/SITL.h"
+#include <AP_Math/AP_Math.h>
+#include <AP_Compass/AP_Compass.h>
+#include <AP_Declination/AP_Declination.h>
+#include <SITL/SITL.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -28,6 +28,8 @@ using namespace HALSITL;
  */
 void SITL_State::_update_compass(float rollDeg, float pitchDeg, float yawDeg)
 {
+    static uint32_t last_update;
+
     if (_compass == NULL) {
         // no compass in this sketch
         return;
@@ -45,7 +47,13 @@ void SITL_State::_update_compass(float rollDeg, float pitchDeg, float yawDeg)
     Vector3f motor = _sitl->mag_mot.get() * _current;
     Vector3f new_mag_data = _compass->getHIL(0) + noise + motor;
 
-    uint32_t now = hal.scheduler->millis();
+    // 100Hz
+    uint32_t now = AP_HAL::millis();
+    if ((now - last_update) < 10) {
+        return;
+    }
+    last_update = now;
+
     // add delay
     uint32_t best_time_delta_mag = 1000; // initialise large time representing buffer entry closest to current time - delay.
     uint8_t best_index_mag = 0; // initialise number representing the index of the entry in buffer closest to delay.

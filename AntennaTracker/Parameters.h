@@ -1,9 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+#pragma once
 
-#ifndef PARAMETERS_H
-#define PARAMETERS_H
-
-#include <AP_Common.h>
+#include <AP_Common/AP_Common.h>
 
 // Global parameter class.
 //
@@ -93,6 +91,8 @@ public:
         k_param_distance_min,
         k_param_sysid_target,       // 138
         k_param_gcs3,               // stream rates for fourth MAVLink port
+        k_param_log_bitmask,        // 140
+        k_param_notify,
 
         //
         // 150: Telemetry control
@@ -148,6 +148,8 @@ public:
     //
     AP_Int8 command_total; // 1 if HOME is set
 
+    AP_Int32 log_bitmask;
+
     // PID controllers
     PID         pidPitch2Srv;
     PID         pidYaw2Srv;
@@ -159,5 +161,3 @@ public:
 };
 
 extern const AP_Param::Info var_info[];
-
-#endif // PARAMETERS_H

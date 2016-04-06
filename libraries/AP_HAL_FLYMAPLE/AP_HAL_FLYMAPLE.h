@@ -15,12 +15,10 @@
 /*
   Flymaple port by Mike McCauley
  */
-
-#ifndef __AP_HAL_FLYMAPLE_H__
-#define __AP_HAL_FLYMAPLE_H__
+#pragma once
 
 /* Your layer exports should depend on AP_HAL.h ONLY. */
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 /**
  * Umbrella header for AP_HAL_FLYMAPLE module.
@@ -47,9 +45,5 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
 
 #include "HAL_FLYMAPLE_Class.h"
-#include "AP_HAL_FLYMAPLE_Main.h"
 
 #endif // CONFIG_HAL_BOARD
-
-#endif //__AP_HAL_FLYMAPLE_H__
-

@@ -15,16 +15,14 @@
 /*
   Flymaple port by Mike McCauley
  */
+#pragma once
 
-#ifndef __AP_HAL_FLYMAPLE_STORAGE_H__
-#define __AP_HAL_FLYMAPLE_STORAGE_H__
-
-#include <AP_HAL_FLYMAPLE.h>
+#include "AP_HAL_FLYMAPLE.h"
 
 class AP_HAL_FLYMAPLE_NS::FLYMAPLEStorage : public AP_HAL::Storage {
 public:
     FLYMAPLEStorage();
-    void init(void *);
+    void init();
     void read_block(void *dst, uint16_t src, size_t n);
     void write_block(uint16_t dst, const void* src, size_t n);
 
@@ -32,5 +30,3 @@ private:
     uint8_t read_byte(uint16_t loc);
     void write_byte(uint16_t loc, uint8_t value);
 };
-
-#endif // __AP_HAL_FLYMAPLE_STORAGE_H__

@@ -20,12 +20,10 @@
 /*
  *  this module deals with calculations involving struct Location
  */
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include <stdlib.h>
 #include "AP_Math.h"
-
-// radius of earth in meters
-#define RADIUS_OF_EARTH 6378100
+#include "location.h"
 
 // scaling factor from 1e-7 degrees to meters at equater
 // == 1.0e-7 * DEG_TO_RAD * RADIUS_OF_EARTH
@@ -35,8 +33,10 @@
 
 float longitude_scale(const struct Location &loc)
 {
+#if HAL_CPU_CLASS < HAL_CPU_CLASS_150
     static int32_t last_lat;
     static float scale = 1.0;
+    // don't optimise on faster CPUs. It causes some minor errors on Replay
     if (labs(last_lat - loc.lat) < 100000) {
         // we are within 0.01 degrees (about 1km) of the
         // same latitude. We can avoid the cos() and return
@@ -47,6 +47,10 @@ float longitude_scale(const struct Location &loc)
     scale = constrain_float(scale, 0.01f, 1.0f);
     last_lat = loc.lat;
     return scale;
+#else
+    float scale = cosf(loc.lat * 1.0e-7f * DEG_TO_RAD);
+    return constrain_float(scale, 0.01f, 1.0f);
+#endif
 }
 
 
@@ -124,7 +128,6 @@ void location_update(struct Location &loc, float bearing, float distance)
 
 /*
  *  extrapolate latitude/longitude given distances north and east
- *  This function costs about 80 usec on an AVR2560
  */
 void location_offset(struct Location &loc, float ofs_north, float ofs_east)
 {
@@ -207,13 +210,56 @@ float wrap_180_cd_float(float angle)
  */
 float wrap_PI(float angle_in_radians)
 {
-    if (angle_in_radians > 10*PI || angle_in_radians < -10*PI) {
+    if (angle_in_radians > 10*M_PI || angle_in_radians < -10*M_PI) {
         // for very large numbers use modulus
-        angle_in_radians = fmodf(angle_in_radians, 2*PI);
+        angle_in_radians = fmodf(angle_in_radians, 2*M_PI);
     }
-    while (angle_in_radians > PI) angle_in_radians -= 2*PI;
-    while (angle_in_radians < -PI) angle_in_radians += 2*PI;
+    while (angle_in_radians > M_PI) angle_in_radians -= 2*M_PI;
+    while (angle_in_radians < -M_PI) angle_in_radians += 2*M_PI;
     return angle_in_radians;
+}
+
+/*
+ * wrap an angle in radians to 0..2PI
+ */
+float wrap_2PI(float angle)
+{
+    if (angle > 10*M_PI || angle < -10*M_PI) {
+        // for very large numbers use modulus
+        angle = fmodf(angle, 2*M_PI);
+    }
+    while (angle > 2*M_PI) angle -= 2*M_PI;
+    while (angle < 0) angle += 2*M_PI;
+    return angle;
+}
+
+/*
+  return true if lat and lng match. Ignores altitude and options
+ */
+bool locations_are_same(const struct Location &loc1, const struct Location &loc2) {
+    return (loc1.lat == loc2.lat) && (loc1.lng == loc2.lng);
+}
+
+/*
+ * convert invalid waypoint with useful data. return true if location changed
+ */
+bool location_sanitize(const struct Location &defaultLoc, struct Location &loc)
+{
+    bool has_changed = false;
+    // convert lat/lng=0 to mean current point
+    if (loc.lat == 0 && loc.lng == 0) {
+        loc.lat = defaultLoc.lat;
+        loc.lng = defaultLoc.lng;
+        has_changed = true;
+    }
+
+    // convert relative alt=0 to mean current alt
+    if (loc.alt == 0 && loc.flags.relative_alt) {
+        loc.flags.relative_alt = false;
+        loc.alt = defaultLoc.alt;
+        has_changed = true;
+    }
+    return has_changed;
 }
 
 /*
@@ -232,12 +278,10 @@ void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon)
 
     // print output including the minus sign
     if( lat_or_lon < 0 ) {
-        s->printf_P(PSTR("-"));
+        s->printf("-");
     }
-    s->printf_P(PSTR("%ld.%07ld"),(long)dec_portion,(long)frac_portion);
+    s->printf("%ld.%07ld",(long)dec_portion,(long)frac_portion);
 }
-
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 
 void wgsllh2ecef(const Vector3d &llh, Vector3d &ecef) {
   double d = WGS84_E * sin(llh[0]);
@@ -340,6 +384,3 @@ void wgsecef2llh(const Vector3d &ecef, Vector3d &llh) {
   llh[0] = copysign(1.0, ecef[2]) * atan(S / (e_c*C));
   llh[2] = (p*e_c*C + fabs(ecef[2])*S - WGS84_A*e_c*A_n) / sqrt(e_c*e_c*C*C + S*S);
 }
-
-#endif
-

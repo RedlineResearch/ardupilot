@@ -18,11 +18,11 @@ bool Plane::auto_takeoff_check(void)
     static bool launchTimerStarted;
     static uint32_t last_tkoff_arm_time;
     static uint32_t last_check_ms;
-    uint16_t wait_time_ms = min(uint16_t(g.takeoff_throttle_delay)*100,12700);
+    uint16_t wait_time_ms = MIN(uint16_t(g.takeoff_throttle_delay)*100,12700);
 
     // Reset states if process has been interrupted
     if (last_check_ms && (now - last_check_ms) > 200) {
-        gcs_send_text_fmt(PSTR("Timer Interrupted AUTO"));
+        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Timer interrupted AUTO");
 	    launchTimerStarted = false;
 	    last_tkoff_arm_time = 0;
         last_check_ms = now;
@@ -48,30 +48,31 @@ bool Plane::auto_takeoff_check(void)
     if (!launchTimerStarted) {
         launchTimerStarted = true;
         last_tkoff_arm_time = now;
-        gcs_send_text_fmt(PSTR("Armed AUTO, xaccel = %.1f m/s/s, waiting %.1f sec"), 
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Armed AUTO, xaccel = %.1f m/s/s, waiting %.1f sec",
                 (double)SpdHgt_Controller->get_VXdot(), (double)(wait_time_ms*0.001f));
     }
 
     // Only perform velocity check if not timed out
     if ((now - last_tkoff_arm_time) > wait_time_ms+100U) {
-        gcs_send_text_fmt(PSTR("Timeout AUTO"));
+        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Timeout AUTO");
         goto no_launch;
     }
 
     // Check aircraft attitude for bad launch
     if (ahrs.pitch_sensor <= -3000 ||
         ahrs.pitch_sensor >= 4500 ||
-        abs(ahrs.roll_sensor) > 3000) {
-        gcs_send_text_fmt(PSTR("Bad Launch AUTO"));
+        labs(ahrs.roll_sensor) > 3000) {
+        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Bad launch AUTO");
         goto no_launch;
     }
 
     // Check ground speed and time delay
     if (((gps.ground_speed() > g.takeoff_throttle_min_speed || is_zero(g.takeoff_throttle_min_speed))) &&
         ((now - last_tkoff_arm_time) >= wait_time_ms)) {
-        gcs_send_text_fmt(PSTR("Triggered AUTO, GPSspd = %.1f"), (double)gps.ground_speed());
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Triggered AUTO. GPS speed = %.1f", (double)gps.ground_speed());
         launchTimerStarted = false;
         last_tkoff_arm_time = 0;
+        steer_state.locked_course_err = 0; // use current heading without any error offset
         return true;
     }
 
@@ -98,9 +99,22 @@ void Plane::takeoff_calc_roll(void)
 
     calc_nav_roll();
 
-    // during takeoff use the level flight roll limit to
-    // prevent large course corrections
-    nav_roll_cd = constrain_int32(nav_roll_cd, -g.level_roll_limit*100UL, g.level_roll_limit*100UL);
+    // during takeoff use the level flight roll limit to prevent large
+    // wing strike. Slowly allow for more roll as we get higher above
+    // the takeoff altitude
+    float roll_limit = roll_limit_cd*0.01f;
+    float baro_alt = barometer.get_altitude();
+    // below 5m use the LEVEL_ROLL_LIMIT
+    const float lim1 = 5;    
+    // at 15m allow for full roll
+    const float lim2 = 15;
+    if (baro_alt < auto_state.baro_takeoff_alt+lim1) {
+        roll_limit = g.level_roll_limit;
+    } else if (baro_alt < auto_state.baro_takeoff_alt+lim2) {
+        float proportion = (baro_alt - (auto_state.baro_takeoff_alt+lim1)) / (lim2 - lim1);
+        roll_limit = (1-proportion) * g.level_roll_limit + proportion * roll_limit;
+    }
+    nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit*100UL, roll_limit*100UL);
 }
 
         
@@ -166,7 +180,7 @@ int8_t Plane::takeoff_tail_hold(void)
 
 return_zero:
     if (auto_state.fbwa_tdrag_takeoff_mode) {
-        gcs_send_text_P(SEVERITY_LOW, PSTR("FBWA tdrag off"));
+        gcs_send_text(MAV_SEVERITY_NOTICE, "FBWA tdrag off");
         auto_state.fbwa_tdrag_takeoff_mode = false;
     }
     return 0;

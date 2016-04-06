@@ -15,11 +15,9 @@
 /*
   Flymaple port by Mike McCauley
  */
+#pragma once
 
-#ifndef __AP_HAL_FLYMAPLE_UARTDRIVER_H__
-#define __AP_HAL_FLYMAPLE_UARTDRIVER_H__
-
-#include <AP_HAL_FLYMAPLE.h>
+#include "AP_HAL_FLYMAPLE.h"
 
 class HardwareSerial; // A libmaple classs
 
@@ -51,5 +49,3 @@ private:
     uint8_t*           _rxBuf; // If need more than libmaple usart driver buffer of 63
     uint16_t           _rxBufSize; // Allocated space in _rxBuf
 };
-
-#endif // __AP_HAL_FLYMAPLE_UARTDRIVER_H__

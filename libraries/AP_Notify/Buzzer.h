@@ -15,14 +15,11 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __BUZZER_H__
-#define __BUZZER_H__
+#pragma once
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-# define BUZZER_PIN     63      // pin 63 on APM1
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
- # define BUZZER_PIN    59      // pin 59 on APM2
-#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#include <AP_HAL/AP_HAL.h>
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
  # define BUZZER_PIN    32
 #else
  # define BUZZER_PIN    0       // pin undefined on other boards
@@ -81,5 +78,3 @@ private:
     uint8_t         _pattern_counter;   // used to time on/off of current patter
     uint32_t        _arming_buzz_start_ms;  // arming_buzz start time in milliseconds
 };
-
-#endif // __BUZZER_H__

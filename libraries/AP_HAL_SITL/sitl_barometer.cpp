@@ -6,8 +6,8 @@
   Andrew Tridgell November 2011
  */
 
-#include <AP_HAL.h>
-#include <AP_Math.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
@@ -21,7 +21,7 @@ extern const AP_HAL::HAL& hal;
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <math.h>
+#include <cmath>
 
 /*
   setup the barometer with new input
@@ -43,8 +43,8 @@ void SITL_State::_update_barometer(float altitude)
         return;
     }
 
-    // 80Hz, to match the real APM2 barometer
-    uint32_t now = hal.scheduler->millis();
+    // 80Hz
+    uint32_t now = AP_HAL::millis();
     if ((now - last_update) < 12) {
         return;
     }

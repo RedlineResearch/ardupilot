@@ -3,10 +3,10 @@
 /// @file	AC_HELI_PID.cpp
 /// @brief	Generic PID algorithm
 
-#include <AP_Math.h>
+#include <AP_Math/AP_Math.h>
 #include "AC_HELI_PID.h"
 
-const AP_Param::GroupInfo AC_HELI_PID::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AC_HELI_PID::var_info[] = {
     // @Param: P
     // @DisplayName: PID Proportional Gain
     // @Description: P Gain which produces an output value that is proportional to the current error value
@@ -32,15 +32,23 @@ const AP_Param::GroupInfo AC_HELI_PID::var_info[] PROGMEM = {
     // @Description: The maximum/minimum value that the I term can output
     AP_GROUPINFO("IMAX", 5, AC_HELI_PID, _imax, 0),
 
-    // @Param: FILT_HZ
+    // @Param: FILT
     // @DisplayName: PID Input filter frequency in Hz
-    // @Description:
-    AP_GROUPINFO("FILT_HZ", 6, AC_HELI_PID, _filt_hz, AC_PID_FILT_HZ_DEFAULT),
+    // @Description: PID Input filter frequency in Hz
+    AP_GROUPINFO("FILT", 6, AC_HELI_PID, _filt_hz, AC_PID_FILT_HZ_DEFAULT),
+
+    // @Param: ILMI
+    // @DisplayName: I-term Leak Minimum
+    // @Description: Point below which I-term will not leak down
+    // @Range: 0 1
+    // @User: Advanced
+    AP_GROUPINFO("ILMI", 7, AC_HELI_PID, _leak_min, AC_PID_LEAK_MIN),
 
     // @Param: AFF
     // @DisplayName: Acceleration FF FeedForward Gain
     // @Description: Acceleration FF Gain which produces an output value that is proportional to the change in demanded input
-    AP_GROUPINFO("AFF",    7, AC_HELI_PID, _aff, 0),
+    AP_GROUPINFO("AFF",    8, AC_HELI_PID, _aff, 0),
+
     AP_GROUPEND
 };
 
@@ -81,7 +89,14 @@ float AC_HELI_PID::get_aff(float requested_rate)
 float AC_HELI_PID::get_leaky_i(float leak_rate)
 {
     if(!is_zero(_ki) && !is_zero(_dt)){
-        _integrator -= (float)_integrator * leak_rate;
+
+        // integrator does not leak down below Leak Min
+        if (_integrator > _leak_min){
+            _integrator -= (float)(_integrator - _leak_min) * leak_rate;
+        } else if (_integrator < -_leak_min) {
+            _integrator -= (float)(_integrator + _leak_min) * leak_rate;
+        }
+
         _integrator += ((float)_input * _ki) * _dt;
         if (_integrator < -_imax) {
             _integrator = -_imax;

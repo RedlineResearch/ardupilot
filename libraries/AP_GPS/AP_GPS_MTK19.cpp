@@ -144,7 +144,7 @@ restart:
 			}
             state.location.alt      = _buffer.msg.altitude;
             state.ground_speed      = _buffer.msg.ground_speed*0.01f;
-            state.ground_course_cd  = _buffer.msg.ground_course;
+            state.ground_course_cd  = wrap_360_cd(_buffer.msg.ground_course);
             state.num_sats          = _buffer.msg.satellites;
             state.hdop              = _buffer.msg.hdop;
             
@@ -159,7 +159,7 @@ restart:
                                         (unsigned)_mtk_revision);                                        
 #endif
                     make_gps_time(_buffer.msg.utc_date, bcd_time_ms);
-                    state.last_gps_time_ms = hal.scheduler->millis();
+                    state.last_gps_time_ms = AP_HAL::millis();
                 }
                 // the _fix_counter is to reduce the cost of the GPS
                 // BCD time conversion by only doing it every 10s

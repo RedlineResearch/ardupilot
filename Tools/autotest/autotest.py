@@ -142,7 +142,7 @@ parser.add_option("-j", default=1, type='int', help='build CPUs')
 
 opts, args = parser.parse_args()
 
-import  arducopter, arduplane, apmrover2
+import  arducopter, arduplane, apmrover2, quadplane
 
 steps = [
     'prerequisites',
@@ -155,6 +155,7 @@ steps = [
     'build.ArduPlane',
     'defaults.ArduPlane',
     'fly.ArduPlane',
+    'fly.QuadPlane',
 
     'build.APMrover2',
     'defaults.APMrover2',
@@ -163,7 +164,11 @@ steps = [
     'build.ArduCopter',
     'defaults.ArduCopter',
     'fly.ArduCopter',
+
+    'build.Helicopter',
     'fly.CopterAVC',
+
+    'build.AntennaTracker',
 
     'convertgpx',
     ]
@@ -204,6 +209,12 @@ def run_step(step):
     if step == 'build.ArduCopter':
         return util.build_SIL('ArduCopter', j=opts.j)
 
+    if step == 'build.AntennaTracker':
+        return util.build_SIL('AntennaTracker', j=opts.j)
+
+    if step == 'build.Helicopter':
+        return util.build_SIL('ArduCopter', target='sitl-heli', j=opts.j)
+
     if step == 'defaults.ArduPlane':
         return get_default_params('ArduPlane')
 
@@ -221,6 +232,9 @@ def run_step(step):
 
     if step == 'fly.ArduPlane':
         return arduplane.fly_ArduPlane(viewerip=opts.viewerip, map=opts.map)
+
+    if step == 'fly.QuadPlane':
+        return quadplane.fly_QuadPlane(viewerip=opts.viewerip, map=opts.map)
 
     if step == 'drive.APMrover2':
         return apmrover2.drive_APMrover2(viewerip=opts.viewerip, map=opts.map)
@@ -336,6 +350,10 @@ def write_fullresults():
     results.addglob("APMrover2 log", 'APMrover2-*.BIN')
     results.addglob("APMrover2 core", 'APMrover2.core')
     results.addglob("APMrover2 ELF", 'APMrover2.elf')
+    results.addfile('AntennaTracker build log', 'AntennaTracker.txt')
+    results.addfile('AntennaTracker code size', 'AntennaTracker.sizes.txt')
+    results.addfile('AntennaTracker stack sizes', 'AntennaTracker.framesizes.txt')
+    results.addglob("AntennaTracker ELF", 'AntennaTracker.elf')
     results.addglob('APM:Libraries documentation', 'docs/libraries/index.html')
     results.addglob('APM:Plane documentation', 'docs/ArduPlane/index.html')
     results.addglob('APM:Copter documentation', 'docs/ArduCopter/index.html')

@@ -18,15 +18,19 @@
     SITL.cpp - software in the loop state
 */
 
-#include <AP_Common.h>
-#include <AP_HAL.h>
-#include <GCS_MAVLink.h>
-#include <SITL.h>
+#include "SITL.h"
+
+#include <AP_Common/AP_Common.h>
+#include <AP_HAL/AP_HAL.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <DataFlash/DataFlash.h>
 
 extern const AP_HAL::HAL& hal;
 
+namespace SITL {
+
 // table of user settable parameters
-const AP_Param::GroupInfo SITL::var_info[] PROGMEM = {
+const AP_Param::GroupInfo SITL::var_info[] = {
     AP_GROUPINFO("BARO_RND",   0, SITL,  baro_noise,  0.2f),
     AP_GROUPINFO("GYR_RND",    1, SITL,  gyro_noise,  0),
     AP_GROUPINFO("ACC_RND",    2, SITL,  accel_noise, 0),
@@ -38,7 +42,7 @@ const AP_Param::GroupInfo SITL::var_info[] PROGMEM = {
     AP_GROUPINFO("ENGINE_MUL", 8, SITL,  engine_mul,  1),
     AP_GROUPINFO("WIND_SPD",   9, SITL,  wind_speed,  0),
     AP_GROUPINFO("WIND_DIR",  10, SITL,  wind_direction,  180),
-    AP_GROUPINFO("WIND_TURB", 11, SITL,  wind_turbulance,  0.2f),
+    AP_GROUPINFO("WIND_TURB", 11, SITL,  wind_turbulance,  0),
     AP_GROUPINFO("GPS_TYPE",  12, SITL,  gps_type,  SITL::GPS_TYPE_UBLOX),
     AP_GROUPINFO("GPS_BYTELOSS",  13, SITL,  gps_byteloss,  0),
     AP_GROUPINFO("GPS_NUMSATS",   14, SITL,  gps_numsats,   10),
@@ -69,6 +73,9 @@ const AP_Param::GroupInfo SITL::var_info[] PROGMEM = {
     AP_GROUPINFO("MAG_DELAY",     39, SITL,  mag_delay, 0),
     AP_GROUPINFO("WIND_DELAY",    40, SITL,  wind_delay, 0),
     AP_GROUPINFO("MAG_OFS",       41, SITL,  mag_ofs, 0),
+    AP_GROUPINFO("ACC2_RND",      42, SITL,  accel2_noise, 0),
+    AP_GROUPINFO("ARSP_FAIL",     43, SITL,  aspd_fail, 0),
+    AP_GROUPINFO("GYR_SCALE",     44, SITL,  gyro_scale, 0),
     AP_GROUPEND
 };
 
@@ -91,15 +98,15 @@ void SITL::simstate_send(mavlink_channel_t chan)
                               state.xAccel,
                               state.yAccel,
                               state.zAccel,
-                              radians(state.rollRate), 
-                              radians(state.pitchRate), 
-                              radians(state.yawRate), 
+                              radians(state.rollRate),
+                              radians(state.pitchRate),
+                              radians(state.yawRate),
                               state.latitude*1.0e7,
                               state.longitude*1.0e7);
 }
 
 /* report SITL state to DataFlash */
-void SITL::Log_Write_SIMSTATE(DataFlash_Class &DataFlash)
+void SITL::Log_Write_SIMSTATE(DataFlash_Class *DataFlash)
 {
     float yaw;
 
@@ -111,7 +118,7 @@ void SITL::Log_Write_SIMSTATE(DataFlash_Class &DataFlash)
 
     struct log_AHRS pkt = {
         LOG_PACKET_HEADER_INIT(LOG_SIMSTATE_MSG),
-        time_us : hal.scheduler->micros64(),
+        time_us : AP_HAL::micros64(),
         roll    : (int16_t)(state.rollDeg*100),
         pitch   : (int16_t)(state.pitchDeg*100),
         yaw     : (uint16_t)(wrap_360_cd(yaw*100)),
@@ -119,7 +126,7 @@ void SITL::Log_Write_SIMSTATE(DataFlash_Class &DataFlash)
         lat     : (int32_t)(state.latitude*1.0e7),
         lng     : (int32_t)(state.longitude*1.0e7)
     };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    DataFlash->WriteBlock(&pkt, sizeof(pkt));
 }
 
 /*
@@ -168,3 +175,4 @@ Vector3f SITL::convert_earth_frame(const Matrix3f &dcm, const Vector3f &gyro)
     return Vector3f(phiDot, thetaDot, psiDot);
 }
 
+} // namespace SITL

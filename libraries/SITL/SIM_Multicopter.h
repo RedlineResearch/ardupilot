@@ -17,10 +17,11 @@
   multicopter simulator class
 */
 
-#ifndef _SIM_MULTICOPTER_H
-#define _SIM_MULTICOPTER_H
+#pragma once
 
 #include "SIM_Aircraft.h"
+
+namespace SITL {
 
 /*
   class to describe a motor position
@@ -28,13 +29,15 @@
 class Motor {
 public:
     float angle;
-    bool clockwise;
+    float yaw_factor;
     uint8_t servo;
+    uint8_t display_order;
 
-    Motor(float _angle, bool _clockwise, uint8_t _servo) :
+    Motor(uint8_t _servo, float _angle, float _yaw_factor, uint8_t _display_order) :
+        servo(_servo), // what servo output drives this motor
         angle(_angle), // angle in degrees from front
-        clockwise(_clockwise), // clockwise == true, anti-clockwise == false
-        servo(_servo) // what servo output drives this motor
+        yaw_factor(_yaw_factor), // positive is clockwise
+        display_order(_display_order) // order for clockwise display
     {}
 };
 
@@ -53,13 +56,30 @@ public:
         name(_name),
         num_motors(_num_motors),
         motors(_motors) {}
+
+
+    // find a frame by name
+    static Frame *find_frame(const char *name);
+    
+    // initialise frame
+    void init(float mass, float hover_throttle, float terminal_velocity, float terminal_rotation_rate);
+
+    // calculate rotational and linear accelerations
+    void calculate_forces(const Aircraft &aircraft,
+                          const Aircraft::sitl_input &input,
+                          Vector3f &rot_accel, Vector3f &body_accel);
+    
+    float terminal_velocity;
+    float terminal_rotation_rate;
+    float thrust_scale;
+    float mass;
+    uint8_t motor_offset;
 };
 
 /*
   a multicopter simulator
  */
-class MultiCopter : public Aircraft
-{
+class MultiCopter : public Aircraft {
 public:
     MultiCopter(const char *home_str, const char *frame_str);
 
@@ -71,14 +91,10 @@ public:
         return new MultiCopter(home_str, frame_str);
     }
 
-private:
-    const Frame *frame;
-    float hover_throttle; // 0..1
-    float terminal_velocity; // m/s
-
-    const float terminal_rotation_rate;
-    float thrust_scale;
+protected:
+    // calculate rotational and linear accelerations
+    void calculate_forces(const struct sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel);
+    Frame *frame;
 };
 
-
-#endif // _SIM_MULTICOPTER_H
+} // namespace SITL

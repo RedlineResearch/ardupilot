@@ -13,13 +13,11 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#pragma once
 
-#ifndef __AP_TERRAIN_H__
-#define __AP_TERRAIN_H__
-
-#include <AP_Common.h>
-#include <AP_HAL.h>
-#include <DataFlash.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_HAL/AP_HAL.h>
+#include <DataFlash/DataFlash.h>
 
 #if HAL_OS_POSIX_IO && defined(HAL_BOARD_TERRAIN_DIRECTORY)
 #define AP_TERRAIN_AVAILABLE 1
@@ -29,10 +27,10 @@
 
 #if AP_TERRAIN_AVAILABLE
 
-#include <AP_Param.h>
-#include <AP_AHRS.h>
-#include <AP_Mission.h>
-#include <AP_Rally.h>
+#include <AP_Param/AP_Param.h>
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_Mission/AP_Mission.h>
+#include <AP_Rally/AP_Rally.h>
 
 #define TERRAIN_DEBUG 0
 
@@ -94,7 +92,7 @@ public:
     void update(void);
 
     // return status enum for health reporting
-    enum TerrainStatus status(void);
+    enum TerrainStatus status(void) const { return system_status; }
 
     // send any pending terrain request message
     void send_request(mavlink_channel_t chan);
@@ -167,7 +165,7 @@ public:
 
 private:
     // allocate the terrain subsystem data
-    void allocate(void);
+    bool allocate(void);
 
     /*
       a grid block is a structure in a local file containing height
@@ -338,7 +336,8 @@ private:
     const AP_Rally &rally;
 
     // cache of grids in memory, LRU
-    struct grid_cache cache[TERRAIN_GRID_BLOCK_CACHE_SIZE];
+    uint8_t cache_size = 0;
+    struct grid_cache *cache = nullptr;
 
     // a grid_cache block waiting for disk IO
     enum DiskIoState {
@@ -402,6 +401,10 @@ private:
 
     // grid spacing during rally check
     uint16_t last_rally_spacing;
+
+    char *file_path = NULL;    
+
+    // status
+    enum TerrainStatus system_status = TerrainStatusDisabled;
 };
 #endif // AP_TERRAIN_AVAILABLE
-#endif // __AP_TERRAIN_H__

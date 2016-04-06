@@ -7,6 +7,9 @@ SYSTYPE			:=	$(shell uname)
 GIT_VERSION := $(shell git rev-parse HEAD | cut -c1-8)
 EXTRAFLAGS += -DGIT_VERSION="\"$(GIT_VERSION)\""
 
+# Add missing parts from libc and libstdc++ for all boards
+EXTRAFLAGS += -I$(SKETCHBOOK)/libraries/AP_Common/missing
+
 # force LANG to C so awk works sanely on MacOS
 export LANG=C
 
@@ -56,6 +59,11 @@ endif
 ifneq ($(wildcard $(SKETCHBOOK)/config.mk),)
 $(info Reading $(SKETCHBOOK)/config.mk)
 include $(SKETCHBOOK)/config.mk
+endif
+
+ifneq ($(wildcard $(SKETCHBOOK)/developer.mk),)
+$(info Reading $(SKETCHBOOK)/developer.mk)
+include $(SKETCHBOOK)/developer.mk
 endif
 
 #
@@ -132,9 +140,9 @@ HAL_BOARD = HAL_BOARD_LINUX
 HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_NONE
 endif
 
-ifneq ($(findstring erle, $(MAKECMDGOALS)),)
+ifneq ($(findstring erleboard, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_LINUX
-HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_ERLE
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD
 endif
 
 ifneq ($(findstring zynq, $(MAKECMDGOALS)),)
@@ -147,14 +155,35 @@ HAL_BOARD = HAL_BOARD_LINUX
 HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_PXF
 endif
 
+ifneq ($(findstring bebop, $(MAKECMDGOALS)),)
+HAL_BOARD = HAL_BOARD_LINUX
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_BEBOP
+endif
+
+
 ifneq ($(findstring navio, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_LINUX
 HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_NAVIO
 endif
 
+ifneq ($(findstring raspilot, $(MAKECMDGOALS)),)
+HAL_BOARD = HAL_BOARD_LINUX
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_RASPILOT
+endif
+
+ifneq ($(findstring erlebrain2, $(MAKECMDGOALS)),)
+HAL_BOARD = HAL_BOARD_LINUX
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2
+endif
+
 ifneq ($(findstring bbbmini, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_LINUX
 HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_BBBMINI
+endif
+
+ifneq ($(findstring minlure, $(MAKECMDGOALS)),)
+HAL_BOARD = HAL_BOARD_LINUX
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_MINLURE
 endif
 
 ifneq ($(findstring vrbrain, $(MAKECMDGOALS)),)
@@ -172,18 +201,28 @@ HAL_BOARD = HAL_BOARD_VRBRAIN
 HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_NONE
 endif
 
-ifneq ($(findstring apm1, $(MAKECMDGOALS)),)
-HAL_BOARD = HAL_BOARD_APM1
-HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_AVR_APM1
-endif
-
-ifneq ($(findstring apm2, $(MAKECMDGOALS)),)
-HAL_BOARD = HAL_BOARD_APM2
-HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_AVR_APM2
-endif
-
 ifneq ($(findstring flymaple, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_FLYMAPLE
+endif
+
+ifneq ($(findstring bhat, $(MAKECMDGOALS)),)
+HAL_BOARD = HAL_BOARD_LINUX
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_BH
+endif
+
+ifneq ($(findstring qflight, $(MAKECMDGOALS)),)
+HAL_BOARD = HAL_BOARD_LINUX
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
+endif
+
+ifneq ($(findstring qurt, $(MAKECMDGOALS)),)
+HAL_BOARD = HAL_BOARD_QURT
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_NONE
+endif
+
+ifneq ($(findstring pxfmini, $(MAKECMDGOALS)),)
+HAL_BOARD = HAL_BOARD_LINUX
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_PXFMINI
 endif
 
 # default to SITL
@@ -192,3 +231,7 @@ HAL_BOARD = HAL_BOARD_SITL
 HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_NONE
 endif
 
+ifneq ($(findstring navio2, $(MAKECMDGOALS)),)
+HAL_BOARD = HAL_BOARD_LINUX
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_NAVIO2
+endif

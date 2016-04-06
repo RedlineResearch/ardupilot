@@ -46,16 +46,14 @@
 *           or if the matrix (A) * b = 0
 *
 ****************************************/
+#pragma once
 
-#ifndef VECTOR3_H
-#define VECTOR3_H
-
-#include <math.h>
+#include <cmath>
 #include <float.h>
 #include <string.h>
 
 
-#if defined(MATH_CHECK_INDEXES) && (MATH_CHECK_INDEXES == 1)
+#if MATH_CHECK_INDEXES
 #include <assert.h>
 #endif
 
@@ -120,7 +118,7 @@ public:
     // allow a vector3 to be used as an array, 0 indexed
     T & operator[](uint8_t i) {
         T *_v = &x;
-#if defined(MATH_CHECK_INDEXES) && (MATH_CHECK_INDEXES == 1)
+#if MATH_CHECK_INDEXES
         assert(i >= 0 && i < 3);
 #endif
         return _v[i];
@@ -128,7 +126,7 @@ public:
 
     const T & operator[](uint8_t i) const {
         const T *_v = &x;
-#if defined(MATH_CHECK_INDEXES) && (MATH_CHECK_INDEXES == 1)
+#if MATH_CHECK_INDEXES
         assert(i >= 0 && i < 3);
 #endif
         return _v[i];
@@ -161,6 +159,7 @@ public:
 
     // rotate by a standard rotation
     void rotate(enum Rotation rotation);
+    void rotate_inverse(enum Rotation rotation);
 
     // gets the length of this vector squared
     T  length_squared() const
@@ -217,8 +216,4 @@ typedef Vector3<uint16_t>               Vector3ui;
 typedef Vector3<int32_t>                Vector3l;
 typedef Vector3<uint32_t>               Vector3ul;
 typedef Vector3<float>                  Vector3f;
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
-    typedef Vector3<double>                 Vector3d;
-#endif
-
-#endif // VECTOR3_H
+typedef Vector3<double>                 Vector3d;

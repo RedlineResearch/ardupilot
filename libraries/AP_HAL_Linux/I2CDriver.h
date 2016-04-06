@@ -1,15 +1,19 @@
+#pragma once
 
-#ifndef __AP_HAL_LINUX_I2CDRIVER_H__
-#define __AP_HAL_LINUX_I2CDRIVER_H__
+#include <vector>
 
-#include <AP_HAL_Linux.h>
+#include <AP_HAL/utility/OwnPtr.h>
 
-class Linux::LinuxI2CDriver : public AP_HAL::I2CDriver {
+#include "AP_HAL_Linux.h"
+#include "I2CDevice.h"
+
+class Linux::I2CDriver : public AP_HAL::I2CDriver {
 public:
-    LinuxI2CDriver(AP_HAL::Semaphore* semaphore, const char *device);
+    I2CDriver(uint8_t bus);
+    I2CDriver(std::vector<const char *> devpaths);
 
-    void begin();
-    void end();
+    void begin() { }
+    void end() { }
     void setTimeout(uint16_t ms);
     void setHighSpeed(bool active);
 
@@ -38,14 +42,15 @@ public:
 
     uint8_t lockup_count();
 
-    AP_HAL::Semaphore* get_semaphore() { return _semaphore; }
+    AP_HAL::Semaphore *get_semaphore();
+
+    bool do_transfer(uint8_t address, const uint8_t *send, uint32_t send_len,
+                     uint8_t *recv, uint32_t recv_len)override;
 
 private:
-    AP_HAL::Semaphore* _semaphore;
     bool set_address(uint8_t addr);
-    int _fd;
+    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _fake_dev;
+    char *_device = NULL;
     uint8_t _addr;
-    const char *_device;
+    bool _print_ioctl_error = true;
 };
-
-#endif // __AP_HAL_LINUX_I2CDRIVER_H__

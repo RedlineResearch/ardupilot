@@ -20,14 +20,12 @@
   serial ports and provides helper functions so objects (like a gimbal) can
   find which serial port they should use
  */
+#pragma once
 
-#ifndef _AP_SERIALMANAGER_
-#define _AP_SERIALMANAGER_
-
-#include <AP_Math.h>
-#include <AP_Common.h>
-#include <AP_HAL.h>
-#include <GCS_MAVLink.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_HAL/AP_HAL.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
 #define SERIALMANAGER_NUM_PORTS 5
 
@@ -81,6 +79,7 @@ public:
         SerialProtocol_GPS2 = 6,        // do not use - use GPS and provide instance of 1
         SerialProtocol_AlexMos = 7,
         SerialProtocol_SToRM32 = 8,
+        SerialProtocol_Lidar = 9,
     };
 
     // Constructor
@@ -111,7 +110,6 @@ public:
     void set_blocking_writes_all(bool blocking);
 
     // set_console_baud - sets the console's baud rate to the rate specified by the protocol
-    //  used on APM2 to switch the console between the console baud rate (115200) and the SERIAL1 baud rate (user configurable)
     void set_console_baud(enum SerialProtocol protocol, uint8_t instance) const;
 
     // parameter var table
@@ -131,5 +129,3 @@ private:
     // protocol_match - returns true if the protocols match
     bool protocol_match(enum SerialProtocol protocol1, enum SerialProtocol protocol2) const;
 };
-
-#endif // _AP_SERIALMANAGER_

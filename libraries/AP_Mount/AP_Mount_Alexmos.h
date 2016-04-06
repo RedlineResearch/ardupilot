@@ -3,17 +3,15 @@
 /*
   Alexmos Serial controlled mount backend class
 */
+#pragma once
 
-#ifndef __AP_MOUNT_ALEXMOS_H__
-#define __AP_MOUNT_ALEXMOS_H__
-
-#include <AP_Mount.h>
-#include <AP_HAL.h>
-#include <AP_Param.h>
-#include <AP_Math.h>
-#include <AP_GPS.h>
-#include <AP_AHRS.h>
-#include <AP_Mount_Backend.h>
+#include "AP_Mount.h"
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Param/AP_Param.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_GPS/AP_GPS.h>
+#include <AP_AHRS/AP_AHRS.h>
+#include "AP_Mount_Backend.h"
 
 
 //definition of the commands id for the Alexmos Serial Protocol
@@ -319,5 +317,3 @@ private:
     // confirmed that last command was ok
     bool _last_command_confirmed : 1;
 };
-
-#endif

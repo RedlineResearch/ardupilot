@@ -36,9 +36,7 @@
 // Matrix3ul	3x3 matrix of unsigned longs
 // Matrix3f		3x3 matrix of signed floats
 //
-
-#ifndef MATRIX3_H
-#define MATRIX3_H
+#pragma once
 
 #include "vector3.h"
 
@@ -128,7 +126,7 @@ public:
     // allow a Matrix3 to be used as an array of vectors, 0 indexed
     Vector3<T> & operator[](uint8_t i) {
         Vector3<T> *_v = &a;
-#if defined(MATH_CHECK_INDEXES) && (MATH_CHECK_INDEXES == 1)
+#if MATH_CHECK_INDEXES
         assert(i >= 0 && i < 3);
 #endif
         return _v[i];
@@ -136,7 +134,7 @@ public:
 
     const Vector3<T> & operator[](uint8_t i) const {
         const Vector3<T> *_v = &a;
-#if defined(MATH_CHECK_INDEXES) && (MATH_CHECK_INDEXES == 1)
+#if MATH_CHECK_INDEXES
         assert(i >= 0 && i < 3);
 #endif
         return _v[i];
@@ -241,8 +239,4 @@ typedef Matrix3<uint16_t>               Matrix3ui;
 typedef Matrix3<int32_t>                Matrix3l;
 typedef Matrix3<uint32_t>               Matrix3ul;
 typedef Matrix3<float>                  Matrix3f;
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
-    typedef Matrix3<double>                 Matrix3d;
-#endif
-
-#endif // MATRIX3_H
+typedef Matrix3<double>                 Matrix3d;
