@@ -648,8 +648,8 @@ def fly_ArduPlane(viewerip=None, map=False):
     global homeloc
     
     print("Generating mission file")
-    HOME_LOCATION = generate_wpfile()
-    HOME_LOCATION = HOME_LOCATION.strip(' ')
+    HOME_LOCATION = generate_wpfile().strip(' ')
+    
     options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --streamrate=10'
     if viewerip:
         options += " --out=%s:14550" % viewerip
