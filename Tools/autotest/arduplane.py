@@ -9,7 +9,8 @@ import random
 testdir=os.path.dirname(os.path.realpath(__file__))
 
 
-HOME_LOCATION='-35.362938,149.165085,585,354'
+# HOME_LOCATION='-35.362938,149.165085,585,354'
+HOME_LOCATION='-35.435,149.165222,585,354'
 WIND="0,180,0.2" # speed,direction,variance
 
 homeloc = None
@@ -33,20 +34,20 @@ def takeoff(mavproxy, mav):
     mavproxy.send('rc 2 1200\n')
 
     # get it moving a bit first
-    mavproxy.send('rc 3 1300\n')
+    mavproxy.send('rc 3 1500\n')
     mav.recv_match(condition='VFR_HUD.groundspeed>6', blocking=True)
 
     # a bit faster again, straighten rudder
-    mavproxy.send('rc 3 1600\n')
+    mavproxy.send('rc 3 1700\n')
     mavproxy.send('rc 4 1500\n')
     mav.recv_match(condition='VFR_HUD.groundspeed>12', blocking=True)
 
     # hit the gas harder now, and give it some more elevator
-    mavproxy.send('rc 2 1100\n')
+    mavproxy.send('rc 2 1100\n') 
     mavproxy.send('rc 3 2000\n')
 
     # gain a bit of altitude
-    if not wait_altitude(mav, homeloc.alt+150, homeloc.alt+180, timeout=30):
+    if not wait_altitude(mav, homeloc.alt+300, homeloc.alt+350, timeout=60):
         return False
 
     # level off
@@ -418,7 +419,10 @@ def fly_mission(mavproxy, mav, filename, height_accuracy=-1, target_altitude=Non
     mavproxy.expect('Requesting [0-9]+ waypoints')
     mavproxy.send('switch 1\n') # auto mode
     wait_mode(mav, 'AUTO')
-    if not wait_waypoint(mav, 1, 5, max_dist=60):
+    
+    # max_dist determines when it finishes the way point
+    # timeout is the number of seconds that the command should finish entirely
+    if not wait_waypoint(mav, 1, 6, max_dist=200):
         return False
     if not wait_groundspeed(mav, 0, 0.5, timeout=60):
         return False
@@ -440,7 +444,7 @@ def fly_ArduPlane(viewerip=None, map=False):
     if map:
         options += ' --map'
 
-    sil = util.start_SIL('ArduPlane', wipe=True, model='jsbsim', home=HOME_LOCATION, speedup=10)
+    sil = util.start_SIL('ArduPlane', wipe=True, model='jsbsim', home=HOME_LOCATION, speedup=20)
     print("Starting MAVProxy")
     mavproxy = util.start_MAVProxy_SIL('ArduPlane', options=options)
     util.expect_setup_callback(mavproxy, expect_callback)
@@ -449,7 +453,7 @@ def fly_ArduPlane(viewerip=None, map=False):
     mavproxy.expect('Received [0-9]+ parameters',timeout=3000)
 
     # setup test parameters
-    mavproxy.send("param load %s/ArduPlane.parm\n" % testdir)
+    mavproxy.send("param load %s/ArduPlane_exp.parm\n" % testdir)
     mavproxy.expect('Loaded [0-9]+ parameters')
 
     mavproxy.send("param fetch\n")
@@ -458,7 +462,7 @@ def fly_ArduPlane(viewerip=None, map=False):
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
 
-    sil = util.start_SIL('ArduPlane', model='jsbsim', home=HOME_LOCATION, speedup=10)
+    sil = util.start_SIL('ArduPlane', model='jsbsim', home=HOME_LOCATION, speedup=20)
     mavproxy = util.start_MAVProxy_SIL('ArduPlane', options=options)
     mavproxy.expect('Logging to (\S+)')
     logfile = mavproxy.match.group(1)
@@ -538,8 +542,8 @@ def fly_ArduPlane(viewerip=None, map=False):
 #         if not fly_CIRCLE(mavproxy, mav):
 #             print("Failed CIRCLE")
 #             failed = True
-        if not fly_mission(mavproxy, mav, os.path.join(testdir, "ap_test.txt"), height_accuracy = 10,
-                           target_altitude=homeloc.alt+100):
+        if not fly_mission(mavproxy, mav, os.path.join(testdir, "auto_mission.txt"), height_accuracy = 10,
+                           target_altitude=homeloc.alt):
             print("Failed mission")
             failed = True
 #         if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/ArduPlane-log.bin")):
