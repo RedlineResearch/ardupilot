@@ -990,36 +990,50 @@ const static char *abs_pos = "0 0 0 ";
 
 void Plane::printTime()
 {
+	char buf[10];
+	char locBuf[100];
+	char relposBuf[100];
+	char relvelBuf[100];
+	char motorBuf[50];
+	char finalBuf[500];
+
     // Prints abs position
     struct Location position;
     if(!ahrs.get_position(position)) {
-    	logFile << abs_pos;
+    	sprintf(locBuf, "%s", abs_pos);
     }
     else {
-    	logFile << position.alt << position.lat << position.lng;
+    	sprintf(locBuf, "%d %d %d ", position.alt, position.lat, position.lng);
     }
+
+    strncat(finalBuf, locBuf, strlen(locBuf));
 
     // Rel position
     Vector3f pos, vel;
     if (!ahrs.get_relative_position_NED(pos)) {
-    	logFile << abs_pos;
+    	sprintf(relposBuf, "%s", abs_pos);
     }
     else {
-    	logFile << pos.x << pos.y << pos.z ;
+    	sprintf(relposBuf, "%f %f %f ", pos.x, pos.y, pos.z);
     }
+
+    strncat(finalBuf, relposBuf, strlen(relposBuf));
 
     // Velocity
     if (!ahrs.get_velocity_NED(vel)) {
-    	logFile << abs_pos;
+    	sprintf(relvelBuf, "%s", abs_pos);
 	}
 	else {
-		logFile << vel.x << vel.y << vel.z;
+		sprintf(relvelBuf, "%f %f %f ", vel.x, vel.y, vel.z);
 	}
+
+    strncat(finalBuf, relvelBuf, strlen(relvelBuf));
 
     // Equivalent throttle_out in plane is the _servo_out
     // from the throttle channel
-
-    logFile << channel_throttle->servo_out << std::endl;
+    sprintf(motorBuf, "%u", channel_throttle->read());
+    strncat(finalBuf, motorBuf, strlen(motorBuf));
+    logFile << finalBuf << std::endl;
 	logFile.flush();
 }
 
