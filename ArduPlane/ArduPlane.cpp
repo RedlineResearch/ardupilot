@@ -148,7 +148,11 @@ void Plane::loop()
     if (remaining > 19500) {
         remaining = 19500;
     }
-    scheduler.run(remaining);
+    auto result = scheduler.run(remaining);
+
+    // Now do data capture
+    printScheTasks(result.first, result.second);
+    printTime();
 }
 
 // update AHRS system
@@ -981,5 +985,68 @@ void Plane::update_optical_flow(void)
     }
 }
 #endif
+
+const static char *abs_pos = "0 0 0 ";
+
+void Plane::printTime()
+{
+    // Prints abs position
+    struct Location position;
+    if(!ahrs.get_position(position)) {
+    	logFile << abs_pos;
+    }
+    else {
+    	logFile << position.alt << position.lat << position.lng;
+    }
+
+    // Rel position
+    Vector3f pos, vel;
+    if (!ahrs.get_relative_position_NED(pos)) {
+    	logFile << abs_pos;
+    }
+    else {
+    	logFile << pos.x << pos.y << pos.z ;
+    }
+
+    // Velocity
+    if (!ahrs.get_velocity_NED(vel)) {
+    	logFile << abs_pos;
+	}
+	else {
+		logFile << vel.x << vel.y << vel.z;
+	}
+
+    // Equivalent throttle_out in plane is the _servo_out
+    // from the throttle channel
+
+    logFile << channel_throttle->servo_out << std::endl;
+	logFile.flush();
+}
+
+/**
+ * printScheTasks - Write out the tasks executed and their time spent
+ * to file. Assuming that both vectors have the same length
+ */
+void Plane::printScheTasks(std::vector< std::pair<std::string, int> > tasks_ran,
+					uint16_t time_avail)
+{
+    // Time Buf needs to be sufficiently large so that we don't get buffer overflow
+	char timeBuf[2000];
+	char nameBuf[50];
+
+	memset(timeBuf, 0, 2000);
+    memset(nameBuf, 0, 50);
+	for (std::vector<std::pair<std::string, int>>::iterator it = tasks_ran.begin();
+		it != tasks_ran.end(); ++it) {
+        char newBuf[50];
+		sprintf(newBuf, "%s:%d ", (*it).first.c_str(), (*it).second);
+		strncat(timeBuf, newBuf, strlen(newBuf));
+    }
+
+    sprintf(nameBuf, "TimeAvail:%u ", time_avail);
+	strncat(timeBuf, nameBuf, strlen(nameBuf));
+	logFile << timeBuf;
+}
+
 
 AP_HAL_MAIN_CALLBACKS(&plane);

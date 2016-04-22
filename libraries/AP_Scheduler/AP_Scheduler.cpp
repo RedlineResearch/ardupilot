@@ -24,6 +24,9 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <stdio.h>
+#include <vector>
+#include <string>
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
 #define SCHEDULER_DEFAULT_LOOP_RATE 400
@@ -82,6 +85,14 @@ void AP_Scheduler::init(const AP_Scheduler::Task *tasks, uint8_t num_tasks)
     _last_run = new uint16_t[_num_tasks];
     memset(_last_run, 0, sizeof(_last_run[0]) * _num_tasks);
     _tick_counter = 0;
+
+    _prev_state = new AP_Scheduler::TaskInfo;
+    init_stats(_prev_state);
+    reset_stats(_prev_state);
+
+    _current_state = new AP_Scheduler::TaskInfo;
+    init_stats(_current_state);
+    reset_stats(_current_state);
 }
 
 // one tick has passed
@@ -90,14 +101,46 @@ void AP_Scheduler::tick(void)
     _tick_counter++;
 }
 
+void AP_Scheduler::init_stats(struct TaskInfo *info)
+{
+	info->inter_tasktimes = new uint32_t[_num_tasks];
+	info->task_start_duration = new std::pair<uint32_t, uint32_t>[_num_tasks];
+}
+
+void AP_Scheduler::reset_stats(struct TaskInfo *info)
+{
+	info->avail_time = -1;
+	memset(info->inter_tasktimes, 0, sizeof(info->inter_tasktimes[0]) * _num_tasks);
+	memset(info->task_start_duration, 0, sizeof(info->task_start_duration[0]) * _num_tasks);
+}
+
+// Copies info in src stat to dest
+void AP_Scheduler::copy_stats(struct TaskInfo *src, struct TaskInfo *dest)
+{
+	dest->avail_time = src->avail_time;
+	memcpy(dest->inter_tasktimes, src->inter_tasktimes,
+			sizeof(src->inter_tasktimes[0]) * _num_tasks);
+	memcpy(dest->task_start_duration, src->task_start_duration,
+			sizeof(src->task_start_duration[0]) * _num_tasks);
+}
+
 /*
   run one tick
   this will run as many scheduler tasks as we can in the specified time
  */
-void AP_Scheduler::run(uint16_t time_available)
+std::pair < std::vector<std::pair<std::string, int>>, uint16_t>
+AP_Scheduler::run(uint16_t time_available)
 {
     uint32_t run_started_usec = AP_HAL::micros();
     uint32_t now = run_started_usec;
+
+    uint32_t time_took = 0;
+    uint16_t time_avail = time_available; //Log total time available to run tasks
+    std::vector< std::pair<std::string, int> > tasks_executed;
+	if (_tick_counter > 1) {
+		copy_stats(_current_state, _prev_state);
+	}
+	_current_state->avail_time = time_available;
 
     for (uint8_t i=0; i<_num_tasks; i++) {
         uint16_t dt = _tick_counter - _last_run[i];
@@ -128,13 +171,28 @@ void AP_Scheduler::run(uint16_t time_available)
                 _tasks[i].function();
                 current_task = -1;
 
-                // record the tick counter when we ran. This drives
-                // when we next run the event
-                _last_run[i] = _tick_counter;
-
                 // work out how long the event actually took
                 now = AP_HAL::micros();
                 uint32_t time_taken = now - _task_time_started;
+                _current_state->task_start_duration[i].first = time_took;
+                _current_state->task_start_duration[i].second = time_taken;
+
+                // Now that we have start and duration, we can calculate period
+				if (_tick_counter > 1) {
+					// In the case where a task has not executed for a while and started again
+					// we want to calculate the inter task time based upon the total time when it
+					// executed last.
+					_current_state->inter_tasktimes[i] = _prev_state->avail_time -
+							_prev_state->task_start_duration[i].first +
+							_current_state->task_start_duration[i].first;
+				}
+
+				// record the tick counter when we ran. This drives
+				// when we next run the event
+				_last_run[i] = _tick_counter;
+				tasks_executed.push_back(std::make_pair(std::string(_tasks[i].name),
+				                										time_taken));
+				time_took += time_taken;
 
                 if (time_taken > _task_time_allowed) {
                     // the event overran!
@@ -152,6 +210,24 @@ void AP_Scheduler::run(uint16_t time_available)
                 time_available -= time_taken;
             }
         }
+        else {
+			// If task can not run, we must add in the time
+			if (_tick_counter > 1) {
+				if (dt > 1) {
+					_current_state->inter_tasktimes[i] = _prev_state->inter_tasktimes[i] +
+								_prev_state->avail_time - _prev_state->task_start_duration[i].first +
+								_current_state->avail_time;
+				}
+				else {
+					_current_state->inter_tasktimes[i] = _prev_state->avail_time -
+								_prev_state->task_start_duration[i].first +
+								_current_state->avail_time;
+				}
+
+				_current_state->task_start_duration[i].first = 0;
+				_current_state->task_start_duration[i].second = 0;
+			}
+        }
     }
 
     // update number of spare microseconds
@@ -163,6 +239,8 @@ update_spare_ticks:
         _spare_ticks /= 2;
         _spare_micros /= 2;
     }
+
+    return std::make_pair(tasks_executed, time_avail);
 }
 
 /*

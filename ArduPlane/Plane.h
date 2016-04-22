@@ -31,8 +31,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include <math.h>
-#include <stdarg.h>
-#include <stdio.h>
 #include <vector>
 #include <string>
 #include <iostream>
@@ -1033,6 +1031,9 @@ private:
     void parachute_release();
     bool parachute_manual_release();
     void accel_cal_update(void);
+    void printTime();
+    void printScheTasks(std::vector< std::pair<std::string, int> > tasks_ran,
+    					uint16_t time_avail);
 
 public:
     void mavlink_delay_cb();

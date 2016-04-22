@@ -48,6 +48,8 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <utility>
+#include <vector>
+#include <string>
 
 class AP_Scheduler
 {
@@ -64,12 +66,16 @@ public:
         uint16_t max_time_micros;
     };
 
+    /* ************ ADDED CODE ******************* */
+
     // Struct that will be used to track period
 	struct TaskInfo {
 		std::pair <uint32_t, uint32_t> *task_start_duration;
 		uint32_t *inter_tasktimes;
 		uint16_t avail_time;
 	};
+
+	/* ************ ADDED CODE ******************* */
 
     // initialise scheduler
     void init(const Task *tasks, uint8_t num_tasks);
@@ -80,7 +86,10 @@ public:
     // run the tasks. Call this once per 'tick'.
     // time_available is the amount of time available to run
     // tasks in microseconds
-    void run(uint16_t time_available);
+    // Returns a pair where the first element is the list of
+    // tasks executed, and the second is the time free after
+    // executing all tasks
+    std::pair < std::vector<std::pair<std::string, int>>, uint16_t> run(uint16_t time_available);
 
     // return the number of microseconds available for the current task
     uint16_t time_available_usec(void);
@@ -104,6 +113,20 @@ public:
     static int8_t current_task;
 
 private:
+
+    /* ************ ADDED CODE ******************* */
+
+    // Initializes the info struct, should be called only once
+	void init_stats(TaskInfo *info);
+	void reset_stats(TaskInfo *info);
+	void copy_stats(TaskInfo *src, TaskInfo *dest);
+
+	// Captures the information between periods
+	TaskInfo *_current_state;
+	TaskInfo *_prev_state;
+
+	/* ************ ADDED CODE ******************* */
+
     // used to enable scheduler debugging
     AP_Int8 _debug;
 
@@ -135,7 +158,5 @@ private:
     // number of ticks that _spare_micros is counted over
     uint8_t _spare_ticks;
 
-    // Captures the information between periods
-    TaskInfo *_current_state;
-    TaskInfo *_prev_state;
+
 };
