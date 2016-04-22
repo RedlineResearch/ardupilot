@@ -151,7 +151,7 @@ void Plane::loop()
     auto result = scheduler.run(remaining);
 
     // Now do data capture
-    printScheTasks(result.first, result.second);
+    // printScheTasks(result.first, result.second);
     printTime();
 }
 
@@ -990,7 +990,6 @@ const static char *abs_pos = "0 0 0 ";
 
 void Plane::printTime()
 {
-	char buf[10];
 	char locBuf[100];
 	char relposBuf[100];
 	char relvelBuf[100];

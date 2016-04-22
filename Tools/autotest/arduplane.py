@@ -568,7 +568,8 @@ def generate_wpfile():
     line5 = "5    0    3    30    {0:1.6f}    0.000000    0.000000    0.000000    0.000000    0.000000    {1:3.2f}    1\n" 
     line6 = "6    0    3    21    {0:11.6f}   0.000000    0.000000    0.000000    {1:11.6f}    {2:11.6f}    {3:3.2f}    1\n" #21 - Land cmd
 
-    descentAngle = 3 # In degrees
+    # Choose a random descent angle between 1-5 degrees
+    descentAngle = random.randrange(1,6) # In degrees
     
     # Given a descentAngle,  we choose a horizontal distance in km and height
     # in meters of the start of the descend
