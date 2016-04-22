@@ -540,7 +540,7 @@ def fly_mission(mavproxy, mav, filename, height_accuracy=-1, target_altitude=Non
     
     # max_dist determines when it finishes the way point
     # timeout is the number of seconds that the command should finish entirely
-    if not wait_waypoint(mav, 1, 6, max_dist=200):
+    if not wait_waypoint(mav, 1, 6, max_dist=300):
         return False
     if not wait_groundspeed(mav, 0, 0.5, timeout=60):
         return False
