@@ -33,6 +33,10 @@
 #include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <vector>
+#include <string>
+#include <iostream>
+#include <fstream>
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
@@ -142,8 +146,12 @@ public:
     // HAL::Callbacks implementation.
     void setup() override;
     void loop() override;
+    void teardown() override;
 
 private:
+    // Log file for data output
+    std::ofstream logFile;
+
     // key aircraft parameters passed to multiple libraries
     AP_Vehicle::FixedWing aparm;
     AP_HAL::BetterStream* cliSerial;

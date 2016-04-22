@@ -86,8 +86,18 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(adsb_update,             1,    500),
 };
 
+void Plane::teardown()
+{
+	logFile.flush();
+	logFile.close();
+}
+
 void Plane::setup() 
 {
+	logFile.open("/home/moses/data/3.5.1/freq.txt", std::ios::out | std::ios::trunc);
+	logFile << "Time, Alt, Lat, Long, Pos_N, Pos_E, Pos_D, Vel_N, Vel_E, Vel_D, Throttle\n";
+	logFile.flush();
+
     cliSerial = hal.console;
 
     // load the default values of variables listed in var_info[]
@@ -945,9 +955,6 @@ void Plane::update_flight_stage(void)
     // tell AHRS the airspeed to true airspeed ratio
     airspeed.set_EAS2TAS(barometer.get_EAS2TAS());
 }
-
-
-
 
 #if OPTFLOW == ENABLED
 // called at 50hz

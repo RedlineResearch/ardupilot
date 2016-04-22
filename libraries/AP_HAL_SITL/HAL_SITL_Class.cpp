@@ -92,6 +92,8 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
     for (;;) {
         callbacks->loop();
     }
+
+    callbacks->teardown();
 }
 
 const AP_HAL::HAL& AP_HAL::get_HAL() {

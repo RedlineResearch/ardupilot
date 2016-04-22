@@ -47,6 +47,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <utility>
 
 class AP_Scheduler
 {
@@ -62,6 +63,13 @@ public:
         float rate_hz;
         uint16_t max_time_micros;
     };
+
+    // Struct that will be used to track period
+	struct TaskInfo {
+		std::pair <uint32_t, uint32_t> *task_start_duration;
+		uint32_t *inter_tasktimes;
+		uint16_t avail_time;
+	};
 
     // initialise scheduler
     void init(const Task *tasks, uint8_t num_tasks);
@@ -126,4 +134,8 @@ private:
 
     // number of ticks that _spare_micros is counted over
     uint8_t _spare_ticks;
+
+    // Captures the information between periods
+    TaskInfo *_current_state;
+    TaskInfo *_prev_state;
 };
