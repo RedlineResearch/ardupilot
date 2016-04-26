@@ -573,7 +573,9 @@ def generate_wpfile():
     
     # Given a descentAngle,  we choose a horizontal distance in km and height
     # in meters of the start of the descend
-    horiDist = random.uniform(5, 20) # in Km
+    # We are scaling this in comparison to the AIAA paper so that our simulation
+    # doesn't take that much time
+    horiDist = random.uniform(1.25, 5) # in Km
     
     # In meters
     descend_start_alt = math.tan(descentAngle * (math.pi / 180)) * horiDist * 1000
