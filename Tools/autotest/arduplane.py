@@ -569,7 +569,8 @@ def generate_wpfile():
     line6 = "6    0    3    21    {0:11.6f}   0.000000    0.000000    0.000000    {1:11.6f}    {2:11.6f}    {3:3.2f}    1\n" #21 - Land cmd
 
     # Choose a random descent angle between 1-5 degrees
-    descentAngle = random.randrange(1,6) # In degrees
+#     descentAngle = random.randrange(1,6) # In degrees
+    descentAngle = 3 # Choosing 3 degrees for now
     
     # Given a descentAngle,  we choose a horizontal distance in km and height
     # in meters of the start of the descend
@@ -652,7 +653,8 @@ def fly_ArduPlane(viewerip=None, map=False):
     
     print("Generating mission file")
     HOME_LOCATION = generate_wpfile().strip(' ')
-    
+#     HOME_LOCATION = "-35.411752,149.165222,585,354"
+
     options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --streamrate=10'
     if viewerip:
         options += " --out=%s:14550" % viewerip
