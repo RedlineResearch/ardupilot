@@ -996,6 +996,12 @@ void Plane::printTime()
 	char motorBuf[50];
 	char finalBuf[500];
 
+	memset(locBuf, 0, 100);
+	memset(relposBuf, 0, 100);
+	memset(relvelBuf, 0, 100);
+	memset(motorBuf, 0, 50);
+	memset(finalBuf, 0, 500);
+
     // Prints abs position
     struct Location position;
     if(!ahrs.get_position(position)) {
