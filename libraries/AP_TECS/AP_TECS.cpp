@@ -924,7 +924,15 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 {
     // Calculate time in seconds since last update
     uint32_t now = AP_HAL::micros();
-    _DT = MAX((now - _update_pitch_throttle_last_usec), 0U) * 1.0e-6f;
+
+//    _DT = MAX((now - _update_pitch_throttle_last_usec), 0U) * 1.0e-6f;
+
+    /*************** BUG BEGIN ************/
+
+    _DT = MAX((now - _update_pitch_throttle_last_usec), 0U) * 1.0e-3f;
+
+    /*************** BUG END ************/
+
     _update_pitch_throttle_last_usec = now;
 
     _is_doing_auto_land = is_doing_auto_land;
