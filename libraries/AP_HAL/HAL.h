@@ -54,17 +54,20 @@ public:
     struct Callbacks {
         virtual void setup() = 0;
         virtual void loop() = 0;
+        virtual void teardown() = 0;
     };
 
     struct FunCallbacks : public Callbacks {
-        FunCallbacks(void (*setup_fun)(void), void (*loop_fun)(void));
+        FunCallbacks(void (*setup_fun)(void), void (*loop_fun)(void), void (*teardown_fun)(void));
 
         void setup() override { _setup(); }
         void loop() override { _loop(); }
+        void teardown() override { _teardown(); }
 
     private:
         void (*_setup)(void);
         void (*_loop)(void);
+        void (*_teardown)(void);
     };
 
     virtual void run(int argc, char * const argv[], Callbacks* callbacks) const = 0;

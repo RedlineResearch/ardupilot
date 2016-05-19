@@ -4,12 +4,14 @@
 
 namespace AP_HAL {
 
-HAL::FunCallbacks::FunCallbacks(void (*setup_fun)(void), void (*loop_fun)(void))
+HAL::FunCallbacks::FunCallbacks(void (*setup_fun)(void), void (*loop_fun)(void), void (*teardown_fun)(void))
     : _setup(setup_fun)
     , _loop(loop_fun)
+	, _teardown(teardown_fun)
 {
     assert(setup_fun);
     assert(loop_fun);
+    assert(teardown_fun);
 }
 
 }
