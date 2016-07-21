@@ -85,8 +85,18 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] PROGMEM = {
     SCHED_TASK(dataflash_periodic,      1,    300),
 };
 
+void Plane::teardown()
+{
+	logFile.flush();
+	logFile.close();
+}
+
 void Plane::setup() 
 {
+	logFile.open("/home/moses/data/ap_plane_3.5.1/freq.txt", std::ios::out | std::ios::trunc);
+	logFile << "Time, Alt, Roll, Pitch, Yaw, Pos_N, Pos_E, Pos_D, Vel_N, Vel_E, Vel_D, Throttle\n";
+	logFile.flush();
+
     cliSerial = hal.console;
 
     // load the default values of variables listed in var_info[]
@@ -138,6 +148,9 @@ void Plane::loop()
         remaining = 19500;
     }
     scheduler.run(remaining);
+
+    // Now do data capture
+    printTime();
 }
 
 // update AHRS system
@@ -857,6 +870,7 @@ void Plane::update_flight_stage(void)
                     bool lined_up = abs(nav_controller->bearing_error_cd()) < 1000;
                     bool below_prev_WP = current_loc.alt < prev_WP_loc.alt;
                     if ((path_progress > 0.3f && lined_up && below_prev_WP) || path_progress > 0.8f) {
+                    	::printf("===> Landing Approach <===");
                         set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_APPROACH);
                     }
                 }
@@ -884,9 +898,6 @@ void Plane::update_flight_stage(void)
     airspeed.set_EAS2TAS(barometer.get_EAS2TAS());
 }
 
-
-
-
 #if OPTFLOW == ENABLED
 // called at 50hz
 void Plane::update_optical_flow(void)
@@ -912,5 +923,66 @@ void Plane::update_optical_flow(void)
     }
 }
 #endif
+
+
+const static char *abs_pos = "0 0 0 ";
+
+void Plane::printTime()
+{
+	char locBuf[100];
+	char relposBuf[100];
+	char relvelBuf[100];
+	char motorBuf[50];
+	char finalBuf[500];
+
+	memset(locBuf, 0, 100);
+	memset(relposBuf, 0, 100);
+	memset(relvelBuf, 0, 100);
+	memset(motorBuf, 0, 50);
+	memset(finalBuf, 0, 500);
+
+    // Prints abs position
+    struct Location position;
+    if(!ahrs.get_position(position)) {
+    	sprintf(locBuf, "%s", "0 0 0 0 ");
+    }
+    else {
+    	sprintf(locBuf, "%d %d %d %d ", position.alt,
+    			ahrs.roll_sensor, ahrs.pitch_sensor, ahrs.yaw_sensor);
+    }
+
+    strncat(finalBuf, locBuf, strlen(locBuf));
+
+    // Capturing roll, pitch and yaw
+
+
+    // Rel position
+    Vector3f pos, vel;
+    if (!ahrs.get_relative_position_NED(pos)) {
+    	sprintf(relposBuf, "%s", abs_pos);
+    }
+    else {
+    	sprintf(relposBuf, "%f %f %f ", pos.x, pos.y, pos.z);
+    }
+
+    strncat(finalBuf, relposBuf, strlen(relposBuf));
+
+    // Velocity
+    if (!ahrs.get_velocity_NED(vel)) {
+    	sprintf(relvelBuf, "%s", abs_pos);
+	}
+	else {
+		sprintf(relvelBuf, "%f %f %f ", vel.x, vel.y, vel.z);
+	}
+
+    strncat(finalBuf, relvelBuf, strlen(relvelBuf));
+
+    // Equivalent throttle_out in plane is the _servo_out
+    // from the throttle channel
+    sprintf(motorBuf, "%u", channel_throttle->read());
+    strncat(finalBuf, motorBuf, strlen(motorBuf));
+    logFile << finalBuf << std::endl;
+	logFile.flush();
+}
 
 AP_HAL_MAIN_CALLBACKS(&plane);
