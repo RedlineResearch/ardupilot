@@ -60,7 +60,7 @@ def deltree(path):
 
 def build_SIL(atype, target='sitl', j=1):
     '''build desktop SIL'''
-    run_cmd("make clean",
+    run_cmd("bash make_llvm_log.sh",
             dir=reltopdir(atype),
             checkfail=True)
     run_cmd("make -j%u %s" % (j, target),
@@ -155,6 +155,7 @@ def start_MAVProxy_SIL(atype, aircraft=None, setup=False, master='tcp:127.0.0.1:
     cmd += ' --aircraft=%s' % aircraft
     if options is not None:
         cmd += ' ' + options
+    print "EXEC: " + cmd
     ret = pexpect.spawn(cmd, logfile=logfile, timeout=60)
     ret.delaybeforesend = 0
     pexpect_autoclose(ret)
