@@ -26,7 +26,7 @@ ifeq ($(findstring MINGW, $(SYSTYPE)),MINGW)
   FIND_TOOL    =  $(firstword $(wildcard $(addsuffix /$(1).exe,$(TOOLPATH))))
 endif
 
-NATIVE_CXX     :=  g++
+NATIVE_CXX     :=  clang++
 NATIVE_CC      :=  gcc
 NATIVE_AS      :=  gcc
 NATIVE_AR      :=  ar
