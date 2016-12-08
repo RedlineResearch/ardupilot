@@ -126,6 +126,16 @@ def build_examples(board, j=None, debug=False, clean=False):
     # then build
     cmd_make = [relwaf(), "examples"]
     run_cmd(cmd_make, directory=topdir(), checkfail=True, show=True)
+
+def build_SIL(atype, target='sitl', j=1):
+    '''build desktop SIL'''
+    run_cmd("make clean", 
+            dir=reltopdir(atype),
+            checkfail=True)
+    # Will automatically fail
+    run_cmd("make -j%u %s" % (j, target),
+            dir=reltopdir(atype),
+            checkfail=False)
     return True
 
 
