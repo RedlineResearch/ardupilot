@@ -60,12 +60,13 @@ def deltree(path):
 
 def build_SIL(atype, target='sitl', j=1):
     '''build desktop SIL'''
-    run_cmd("make clean",
+    run_cmd("make clean", 
             dir=reltopdir(atype),
             checkfail=True)
+    # Will automatically fail
     run_cmd("make -j%u %s" % (j, target),
             dir=reltopdir(atype),
-            checkfail=True)
+            checkfail=False)
     return True
 
 # list of pexpect children to close on exit
