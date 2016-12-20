@@ -219,6 +219,7 @@ def start_SITL(binary, valgrind=False, gdb=False, wipe=False,
         cmd.extend(['xterm', '-e', 'gdb', '-x', '/tmp/x.gdb', '--args'])
 
     cmd.append(binary)
+
     if wipe:
         cmd.append('-w')
     if synthetic_clock:

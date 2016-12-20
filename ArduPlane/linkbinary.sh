@@ -3,10 +3,10 @@ AP_HOME="/data/hhuang04/ap3.5.1"
 OSCOPEAPI="/data/hhuang04/autopilotsim/oscope/instrumentation"
 INSTRUMENTER="/data/hhuang04/DroneInstrumenter/build"
 
-echo "Generating Ardupilot bitcode"
+# echo "Generating Ardupilot bitcode"
 rm -f $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full.bc
 rm -f $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_instr.bc
-rm -f $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_inject.bc
+rm -f $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_inject.bc $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_inject.s $AP_HOME/tmp/ArduPlane.build2/ArduPlane.elf
 llvm-link -o $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full.bc `find $AP_HOME/tmp/ArduPlane.build2/ -name "*.bc"`
 
 echo "Make Oscope bitcode"
@@ -23,8 +23,9 @@ echo "Combine Ardupilot and Instrumentation Bicodes"
 llvm-link -o $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_instr.bc $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full.bc $OSCOPEAPI/oscopeAPI.bc
 
 echo "Inject instrumentation into Ardupilot bitcode"
-opt -load $INSTRUMENTER/varpass/libVarPass.so -varpassTest -allF $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_instr.bc > $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_inject.bc
+opt -load $INSTRUMENTER/varpass/libVarPass.so -varpassTest -allF -sfile=/data/hhuang04/ap3.5.1/ArduPlane/filelist.txt $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_instr.bc > $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_inject.bc
 
+#-arg=/data/hhuang04/ap3.5.1/ArduPlane/varlist.txt
 echo "Compiling to assembly"
 llc -o $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_inject.s $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_inject.bc 
 
