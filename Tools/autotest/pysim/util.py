@@ -117,9 +117,9 @@ def start_SIL(atype, valgrind=False, gdb=False, wipe=False, synthetic_clock=True
         f.write("r\n");
         f.close()
         cmd += 'xterm -e gdb -x /tmp/x.gdb --args '
-    executable = reltopdir('tmp/%s.build/%s.elf' % (atype, atype))
+    executable = reltopdir('tmp/%s.build2/%s.elf' % (atype, atype))
     if not os.path.exists(executable):
-        executable = '/tmp/%s.build/%s.elf' % (atype, atype)
+        executable = '/tmp/%s.build2/%s.elf' % (atype, atype)
     cmd += executable
     if wipe:
         cmd += ' -w'

@@ -685,14 +685,14 @@ def fly_ArduPlane(viewerip=None, map=False):
     logfile = mavproxy.match.group(1)
     print("LOGFILE %s" % logfile)
 
-    buildlog = util.reltopdir("../buildlogs/ArduPlane-test.tlog")
-    print("buildlog=%s" % buildlog)
-    if os.path.exists(buildlog):
-        os.unlink(buildlog)
-    try:
-        os.link(logfile, buildlog)
-    except Exception:
-        pass
+    # buildlog = util.reltopdir("../buildlogs/ArduPlane-test.tlog")
+    # print("buildlog=%s" % buildlog)
+    # if os.path.exists(buildlog):
+    #     os.unlink(buildlog)
+    # try:
+    #     os.link(logfile, buildlog)
+    # except Exception:
+    #     pass
 
     util.expect_setup_callback(mavproxy, expect_callback)
 
