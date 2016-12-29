@@ -87,15 +87,15 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] PROGMEM = {
 
 void Plane::teardown()
 {
-	logFile.flush();
-	logFile.close();
+//	logFile.flush();
+//	logFile.close();
 }
 
 void Plane::setup() 
 {
-	logFile.open("/home/moses/data/3.5.1/freq.txt", std::ios::out | std::ios::trunc);
-	logFile << "Time, Alt, Lat, Long, Pos_N, Pos_E, Pos_D, Vel_N, Vel_E, Vel_D, Throttle\n";
-	logFile.flush();
+//	logFile.open("/home/moses/data/3.5.1/freq.txt", std::ios::out | std::ios::trunc);
+//	logFile << "Time, Alt, Lat, Long, Pos_N, Pos_E, Pos_D, Vel_N, Vel_E, Vel_D, Throttle\n";
+//	logFile.flush();
 
     cliSerial = hal.console;
 
@@ -150,7 +150,9 @@ void Plane::loop()
     scheduler.run(remaining);
 
     // Now do data capture
-	printTime();
+    // printScheTasks(result.first, result.second);
+    // printTime();
+
 }
 
 // update AHRS system
