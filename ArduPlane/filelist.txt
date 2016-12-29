@@ -1,0 +1,32 @@
+# This should contain the filename of the files that need to be instrumented
+# To comment out a line,  add # to start of line
+
+ArduPlane.cpp
+Attitude.cpp
+adsb.cpp
+altitude.cpp
+arming_checks.cpp
+capabilities.cpp
+commands.cpp
+commands_logic.cpp
+commands_process.cpp
+control_modes.cpp
+events.cpp
+failsafe.cpp
+GCS_Mavlink.cpp
+geofence.cpp
+is_flying.cpp
+landing.cpp
+Log.cpp
+motor_test.cpp
+navigation.cpp
+parachute.cpp
+Parameters.cpp
+# Plane.cpp # Will Segfault
+px4_mixer.cpp
+# quadplane.cpp # Will Segfault
+radio.cpp
+sensors.cpp
+setup.cpp
+system.cpp
+takeoff.cpp
