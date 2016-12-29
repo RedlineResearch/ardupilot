@@ -542,7 +542,7 @@ def fly_mission(mavproxy, mav, filename, height_accuracy=-1, target_altitude=Non
     # timeout is the number of seconds that the command should finish entirely
     if not wait_waypoint(mav, 1, 6, max_dist=300):
         return False
-    if not wait_groundspeed(mav, 0, 0.5, timeout=60):
+    if not wait_groundspeed(mav, 0, 0.5, timeout=180): #In case we have go around
         return False
     print("Mission OK")
     return True
@@ -685,14 +685,14 @@ def fly_ArduPlane(viewerip=None, map=False):
     logfile = mavproxy.match.group(1)
     print("LOGFILE %s" % logfile)
 
-    # buildlog = util.reltopdir("../buildlogs/ArduPlane-test.tlog")
-    # print("buildlog=%s" % buildlog)
-    # if os.path.exists(buildlog):
-    #     os.unlink(buildlog)
-    # try:
-    #     os.link(logfile, buildlog)
-    # except Exception:
-    #     pass
+    buildlog = util.reltopdir("../buildlogs/ArduPlane-test.tlog")
+    print("buildlog=%s" % buildlog)
+    if os.path.exists(buildlog):
+        os.unlink(buildlog)
+    try:
+        os.link(logfile, buildlog)
+    except Exception:
+        pass
 
     util.expect_setup_callback(mavproxy, expect_callback)
 
