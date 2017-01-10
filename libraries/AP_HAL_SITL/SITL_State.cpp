@@ -22,7 +22,6 @@
 extern const AP_HAL::HAL& hal;
 
 using namespace HALSITL;
-using namespace SITL;
 
 void SITL_State::_set_param_default(const char *parm)
 {
@@ -91,7 +90,7 @@ void SITL_State::_sitl_setup(void)
         _update_gps(0, 0, 0, 0, 0, 0, false);
 #endif
         if (enable_gimbal) {
-            gimbal = new Gimbal(_sitl->state);
+            gimbal = new SITL::Gimbal(_sitl->state);
         }
     }
 
@@ -230,7 +229,7 @@ void SITL_State::_fdm_input(void)
         uint16_t pwm[8];
     };
     union {
-        struct sitl_fdm fg_pkt;
+        struct SITL::sitl_fdm fg_pkt;
         struct pwm_packet pwm_pkt;
     } d;
     bool got_fg_input = false;
@@ -302,7 +301,7 @@ void SITL_State::_fdm_input(void)
  */
 void SITL_State::_fdm_input_local(void)
 {
-    Aircraft::sitl_input input;
+    SITL::Aircraft::sitl_input input;
 
     // check for direct RC input
     _fdm_input();
@@ -357,7 +356,7 @@ void SITL_State::_apply_servo_filter(float deltat)
 /*
   create sitl_input structure for sending to FDM
  */
-void SITL_State::_simulator_servos(Aircraft::sitl_input &input)
+void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
 {
     static uint32_t last_update_usec;
 
@@ -465,7 +464,7 @@ void SITL_State::_simulator_output(bool synthetic_clock_mode)
         uint16_t pwm[SITL_NUM_CHANNELS];
         uint16_t speed, direction, turbulance;
     } control;
-    Aircraft::sitl_input input;
+    SITL::Aircraft::sitl_input input;
 
     _simulator_servos(input);
 
