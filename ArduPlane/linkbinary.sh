@@ -1,5 +1,5 @@
 #!/bin/bash
-AP_HOME="/home/moses/research/software/ap_plane3.5.1"
+AP_HOME="/home/moses/research/software/ap_plane_bug2835"
 OSCOPEAPI="/home/moses/research/software/aviation/oscope/instrumentation"
 INSTRUMENTER="/home/moses/DroneInstrumenter/build"
 
