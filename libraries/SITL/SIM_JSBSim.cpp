@@ -237,7 +237,7 @@ void JSBSim::check_stdout(void)
     ssize_t ret = ::read(jsbsim_stdout, line, sizeof(line));
     if (ret > 0) {
 #if DEBUG_JSBSIM
-        write(1, line, ret);
+        write(2, line, ret);
 #endif
     }
 }
@@ -259,7 +259,7 @@ bool JSBSim::expect(const char *str)
             str = basestr;
         }
 #if DEBUG_JSBSIM
-        write(1, &c, 1);
+        write(2, &c, 1);
 #endif
     }
     return true;
@@ -276,7 +276,7 @@ bool JSBSim::open_control_socket(void)
     if (!sock_control.connect("127.0.0.1", control_port)) {
         return false;
     }
-    printf("Opened JSBSim control socket\n");
+    fprintf(stderr, "Opened JSBSim control socket\n");
     sock_control.set_blocking(false);
     opened_control_socket = true;
 
