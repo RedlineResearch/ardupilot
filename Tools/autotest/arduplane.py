@@ -4,7 +4,9 @@ import math
 import os
 import shutil
 
-import pexpect
+import util, pexpect, sys, time, math, shutil, os
+from timeit import default_timer as timer
+from common import *
 from pymavlink import mavutil
 
 from common import *
@@ -37,20 +39,20 @@ def takeoff(mavproxy, mav):
     mavproxy.send('rc 2 1200\n')
 
     # get it moving a bit first
-    mavproxy.send('rc 3 1300\n')
+    mavproxy.send('rc 3 1500\n')
     mav.recv_match(condition='VFR_HUD.groundspeed>6', blocking=True)
 
     # a bit faster again, straighten rudder
-    mavproxy.send('rc 3 1600\n')
+    mavproxy.send('rc 3 1700\n')
     mavproxy.send('rc 4 1500\n')
     mav.recv_match(condition='VFR_HUD.groundspeed>12', blocking=True)
 
     # hit the gas harder now, and give it some more elevator
-    mavproxy.send('rc 2 1100\n')
+    mavproxy.send('rc 2 1100\n') 
     mavproxy.send('rc 3 2000\n')
 
     # gain a bit of altitude
-    if not wait_altitude(mav, homeloc.alt+150, homeloc.alt+180, timeout=30):
+    if not wait_altitude(mav, homeloc.alt+300, homeloc.alt+350, timeout=60):
         return False
 
     # level off
@@ -435,6 +437,102 @@ def fly_mission(mavproxy, mav, filename, height_accuracy=-1, target_altitude=Non
     print("Mission OK")
     return True
 
+def generate_wpfile():
+    ''' Generates the waypoint file
+    '''
+    LAND_LAT = -35.362881 # Location of landing runway
+    LAND_LONG = 149.165222
+    START_ALT = 585.40 #Meters relative to sea level, this is global altitude
+    FILE_NAME = "auto_mission.txt"
+    
+    header = "QGC WPL 110\n"
+    line0 = "0    0    0    16    0.000000    0.000000    0.000000    0.000000    {0:11.6f}    {1:11.6f}    {2:3.2f}    1\n"
+    line1 = "1    1    3    16    0.000000    0.000000    0.000000    0.000000    {0:11.6f}    {1:11.6f}    {2:3.2f}    1\n"
+    line2 = "2    0    3    189    0.000000    0.000000    0.000000    0.000000    {0:11.6f}    {1:11.6f}    {2:3.2f}    1\n" #189 - Start landing sequence
+    line3 = "3    0    3    16    0.000000    0.000000    0.000000    0.000000    {0:11.6f}    {1:11.6f}    {2:3.2f}    1\n"
+    line4 = "4    0    3    16    0.000000    0.000000    0.000000    0.000000    {0:11.6f}    {1:11.6f}    {2:3.2f}    1\n"
+    
+    #Climb or descend - If you want the plane to continue, put in the exact same altitude as line 4 and 
+    # the first parameter should be 0
+    # If you want to climb, then put in 1 as first param and put in a large altitude
+    line5 = "5    0    3    30    {0:1.6f}    0.000000    0.000000    0.000000    0.000000    0.000000    {1:3.2f}    1\n" 
+    line6 = "6    0    3    21    {0:11.6f}   0.000000    0.000000    0.000000    {1:11.6f}    {2:11.6f}    {3:3.2f}    1\n" #21 - Land cmd
+
+    # Choose a random descent angle between 1-5 degrees
+#     descentAngle = random.randrange(1,6) # In degrees
+    descentAngle = 3 # Choosing 3 degrees for now
+    
+    # Given a descentAngle,  we choose a horizontal distance in km and height
+    # in meters of the start of the descend
+    # We are scaling this in comparison to the AIAA paper so that our simulation
+    # doesn't take that much time
+    horiDist = random.uniform(1.25, 5) # in Km
+    
+    # In meters
+    descend_start_alt = math.tan(descentAngle * (math.pi / 180)) * horiDist * 1000
+
+    # We fix the home location to be the take off point, which is the landing 
+    # lat PLUS the horiDst and plus a little extra to allow for the distance
+    # traveled during take off    
+    land_loc = GeoLocation.from_degrees(LAND_LAT, LAND_LONG)
+    takeoff_dist = 1
+    SW_loc, NE_loc = land_loc.bounding_locations(horiDist)
+    SW_halfway_loc, NE_halfway_loc = land_loc.bounding_locations(horiDist/2.)
+    home_loc, notused = land_loc.bounding_locations(horiDist + takeoff_dist)
+    
+    diceroll = random.random()
+    
+    with open(WP_MISSION_FILENAME, "w") as f:        
+        f.write(header)
+        
+        # Home location
+        f.write(line0.format(home_loc.deg_lat, LAND_LONG, START_ALT))
+        
+        # The scenario is one where the plane goes up to a target altitude
+        # and then starts the descend, the path of descend is a straight line
+        
+        # 1st waypoint is the one that the plane will catch after it has 
+        # been called back from take off, altitude should be the same as the
+        # descent alt
+        rndlat = random.uniform(-2000, 2000)
+        lat = home_loc.deg_lat + rndlat * 10**-6
+        
+        f.write(line1.format(lat, LAND_LONG, descend_start_alt))
+        
+        # 2nd waypoint
+        # The start of the descend, we take the SW_loc and take only the lat
+        # but keep the lon the same        
+        f.write(line2.format(0.0, 0.0, 0.0))
+        
+        # 3rd waypoint
+        # Start of landing sequence
+        f.write(line3.format(SW_loc.deg_lat, LAND_LONG, descend_start_alt))
+        
+        # 4th waypoint
+        # This is halfway between start of descend and landing
+        f.write(line4.format(SW_halfway_loc.deg_lat, LAND_LONG, descend_start_alt/2.))
+                
+        # 5th waypoint
+        # Now we decide whether we have a go around
+        if (diceroll < 0.1): # 10% chance of go around
+            f.write(line5.format(1.0, descend_start_alt)) # Pull up
+            # Landing
+            f.write(line6.format(descend_start_alt, LAND_LAT, LAND_LONG, 0.0))
+        else:
+            f.write(line5.format(0.0, descend_start_alt/2.)) #continue descent
+            # We have to push the home location back it since it always land short
+            f.write(line6.format(0.0, LAND_LAT + 0.002 , LAND_LONG, 0.0)) 
+        
+        # 6th waypoint
+        # Landing
+        f.write("\n")
+        f.write("# Descent Angle:{0:1d}\n".format(descentAngle))
+        f.write("# Descent Distance:{0:5.2f}\n".format(horiDist * 1000))
+        f.write("# Descent Height:{0:4.2f}\n".format(descend_start_alt))
+        f.write("# GoAround:{0:1d}\n".format(1 if (diceroll < 0.1) else 0))
+
+    return '{0},{1},585,354'.format(home_loc.deg_lat, LAND_LONG)
+
 
 def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=False, gdbserver=False, speedup=10):
     """Fly ArduPlane in SITL.
@@ -443,6 +541,10 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
     mavproxy packets too for local viewing of the flight in real time
     """
     global homeloc
+    
+    print("Generating mission file")
+#     HOME_LOCATION = generate_wpfile().strip(' ')
+    HOME_LOCATION = "-35.402830,149.165222,585.40,354"
 
     options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --streamrate=10'
     if viewerip:
@@ -558,6 +660,8 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
         failed = True
         fail_list.append("timeout")
 
+    end = timer()
+    print '========== TOTAL TIME : {} ============'.format(end - start)
     mav.close()
     util.pexpect_close(mavproxy)
     util.pexpect_close(sitl)
