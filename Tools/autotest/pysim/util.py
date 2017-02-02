@@ -134,7 +134,7 @@ def start_SIL(atype, valgrind=False, gdb=False, wipe=False, synthetic_clock=True
     if defaults_file is not None:
         cmd += ' --defaults=%s' % defaults_file
     print("Running: %s" % cmd)
-    ret = pexpect.spawn(cmd, logfile=sys.stdout, timeout=5)
+    ret = pexpect.spawn(cmd, logfile=sys.stdout, timeout=5, ignore_sighup=False)
     ret.delaybeforesend = 0
     pexpect_autoclose(ret)
     # give time for parameters to properly setup

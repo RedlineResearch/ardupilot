@@ -138,6 +138,7 @@ parser.add_option("--viewerip", default=None, help='IP address to send MAVLink a
 parser.add_option("--map", action='store_true', default=False, help='show map')
 parser.add_option("--experimental", default=False, action='store_true', help='enable experimental tests')
 parser.add_option("--timeout", default=3000, type='int', help='maximum runtime in seconds')
+parser.add_option("--speedup", default=1, type='int', help='Speed up for simulator, defaults to 1')
 parser.add_option("-j", default=1, type='int', help='build CPUs')
 
 opts, args = parser.parse_args()
@@ -231,7 +232,7 @@ def run_step(step):
         return arducopter.fly_CopterAVC(viewerip=opts.viewerip, map=opts.map)
 
     if step == 'fly.ArduPlane':
-        return arduplane.fly_ArduPlane(viewerip=opts.viewerip, map=opts.map)
+        return arduplane.fly_ArduPlane(viewerip=opts.viewerip, map=opts.map, speedup=opts.speedup)
 
     if step == 'fly.QuadPlane':
         return quadplane.fly_QuadPlane(viewerip=opts.viewerip, map=opts.map)

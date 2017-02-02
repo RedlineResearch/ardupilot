@@ -1,6 +1,7 @@
 # fly ArduPlane in SIL
 
 import util, pexpect, sys, time, math, shutil, os
+from timeit import default_timer as timer
 from common import *
 from pymavlink import mavutil
 import random
@@ -643,7 +644,7 @@ def generate_wpfile():
 
     return '{0},{1},585,354'.format(home_loc.deg_lat, LAND_LONG)
 
-def fly_ArduPlane(viewerip=None, map=False):
+def fly_ArduPlane(viewerip=None, map=False, speedup=1):
     '''fly ArduPlane in SIL
 
     you can pass viewerip as an IP address to optionally send fg and
@@ -652,8 +653,8 @@ def fly_ArduPlane(viewerip=None, map=False):
     global homeloc
     
     print("Generating mission file")
-    HOME_LOCATION = generate_wpfile().strip(' ')
-#     HOME_LOCATION = "-35.411752,149.165222,585,354"
+#     HOME_LOCATION = generate_wpfile().strip(' ')
+    HOME_LOCATION = "-35.402830,149.165222,585.40,354"
 
     options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --streamrate=10'
     if viewerip:
@@ -661,30 +662,32 @@ def fly_ArduPlane(viewerip=None, map=False):
     if map:
         options += ' --map'
 
-    sil = util.start_SIL('ArduPlane', wipe=True, model='jsbsim', home=HOME_LOCATION, speedup=10)
+    # Have to modify this so that we're copying the no instrumentation arduplane binary to set things up
+    # Then we copy over the actual one we're testing and running it 
+    sil = util.start_SIL('ArduPlane', wipe=True, model='jsbsim', home=HOME_LOCATION, speedup=speedup)
     print("Starting MAVProxy")
     mavproxy = util.start_MAVProxy_SIL('ArduPlane', options=options)
     util.expect_setup_callback(mavproxy, expect_callback)
-
+  
     mavproxy.expect('Telemetry log: (\S+)')
     mavproxy.expect('Received [0-9]+ parameters',timeout=3000)
-
+  
     # setup test parameters
     mavproxy.send("param load %s/ArduPlane.parm\n" % testdir)
     mavproxy.expect('Loaded [0-9]+ parameters')
-
+  
     mavproxy.send("param fetch\n")
-
+  
     # restart with new parms
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
 
-    sil = util.start_SIL('ArduPlane', model='jsbsim', home=HOME_LOCATION, speedup=10)
+    sil = util.start_SIL('ArduPlane', model='jsbsim', home=HOME_LOCATION, speedup=speedup)
     mavproxy = util.start_MAVProxy_SIL('ArduPlane', options=options)
     mavproxy.expect('Telemetry log: (\S+)')
     logfile = mavproxy.match.group(1)
     print("LOGFILE %s" % logfile)
-
+ 
     buildlog = util.reltopdir("../buildlogs/ArduPlane-test.tlog")
     print("buildlog=%s" % buildlog)
     if os.path.exists(buildlog):
@@ -695,7 +698,7 @@ def fly_ArduPlane(viewerip=None, map=False):
         pass
 
     util.expect_setup_callback(mavproxy, expect_callback)
-
+ 
     mavproxy.expect('Received [0-9]+ parameters')
 
     expect_list_clear()
@@ -726,6 +729,7 @@ def fly_ArduPlane(viewerip=None, map=False):
             mav.wait_gps_fix()
         homeloc = mav.location()
         print("Home location: %s" % homeloc)
+        start = timer()
         if not takeoff(mavproxy, mav):
             print("Failed takeoff")
             failed = True
@@ -770,6 +774,8 @@ def fly_ArduPlane(viewerip=None, map=False):
         print("Failed with timeout")
         failed = True
 
+    end = timer()
+    print '========== TOTAL TIME : {} ============'.format(end - start)
     mav.close()
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
