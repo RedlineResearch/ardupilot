@@ -4,7 +4,9 @@ import math
 import os
 import shutil
 
-import pexpect
+import util, pexpect, sys, time, math, shutil, os
+from timeit import default_timer as timer
+from common import *
 from pymavlink import mavutil
 
 from common import *
@@ -161,20 +163,20 @@ def takeoff(mavproxy, mav):
     mavproxy.send('rc 2 1200\n')
 
     # get it moving a bit first
-    mavproxy.send('rc 3 1300\n')
+    mavproxy.send('rc 3 1500\n')
     mav.recv_match(condition='VFR_HUD.groundspeed>6', blocking=True)
 
     # a bit faster again, straighten rudder
-    mavproxy.send('rc 3 1600\n')
+    mavproxy.send('rc 3 1700\n')
     mavproxy.send('rc 4 1500\n')
     mav.recv_match(condition='VFR_HUD.groundspeed>12', blocking=True)
 
     # hit the gas harder now, and give it some more elevator
-    mavproxy.send('rc 2 1100\n')
+    mavproxy.send('rc 2 1100\n') 
     mavproxy.send('rc 3 2000\n')
 
     # gain a bit of altitude
-    if not wait_altitude(mav, homeloc.alt+150, homeloc.alt+180, timeout=30):
+    if not wait_altitude(mav, homeloc.alt+300, homeloc.alt+350, timeout=60):
         return False
 
     # level off
@@ -579,7 +581,7 @@ def generate_wpfile():
     
     header = "QGC WPL 110\n"
     line0 = "0    0    0    16    0.000000    0.000000    0.000000    0.000000    {0:11.6f}    {1:11.6f}    {2:3.2f}    1\n"
-    line1 = "1    1    3    22    0.000000    0.000000    0.000000    0.000000    {0:11.6f}    {1:11.6f}    {2:3.2f}    1\n" #Takeoff built in
+    line1 = "1    1    3    16    0.000000    0.000000    0.000000    0.000000    {0:11.6f}    {1:11.6f}    {2:3.2f}    1\n"
     line2 = "2    0    3    189    0.000000    0.000000    0.000000    0.000000    {0:11.6f}    {1:11.6f}    {2:3.2f}    1\n" #189 - Start landing sequence
     line3 = "3    0    3    16    0.000000    0.000000    0.000000    0.000000    {0:11.6f}    {1:11.6f}    {2:3.2f}    1\n"
     line4 = "4    0    3    16    0.000000    0.000000    0.000000    0.000000    {0:11.6f}    {1:11.6f}    {2:3.2f}    1\n"
@@ -674,8 +676,8 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
     global homeloc
     
     print("Generating mission file")
-    HOME_LOCATION = generate_wpfile().strip(' ')
-#     HOME_LOCATION = "-35.411752,149.165222,585,354"
+#     HOME_LOCATION = generate_wpfile().strip(' ')
+    HOME_LOCATION = "-35.402830,149.165222,585.40,354"
 
     options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --streamrate=10'
     if viewerip:
@@ -733,9 +735,10 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
             mav.wait_gps_fix()
         homeloc = mav.location()
         print("Home location: %s" % homeloc)
-#         if not takeoff(mavproxy, mav):
-#             print("Failed takeoff")
-#             failed = True
+        start = timer()
+        if not takeoff(mavproxy, mav):
+            print("Failed takeoff")
+            failed = True
 #         if not fly_left_circuit(mavproxy, mav):
 #             print("Failed left circuit")
 #             failed = True
@@ -778,6 +781,8 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
         failed = True
         fail_list.append("timeout")
 
+    end = timer()
+    print '========== TOTAL TIME : {} ============'.format(end - start)
     mav.close()
     util.pexpect_close(mavproxy)
     util.pexpect_close(sitl)
