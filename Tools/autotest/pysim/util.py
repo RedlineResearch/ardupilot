@@ -127,7 +127,7 @@ def start_SIL(atype, valgrind=False, wipe=False, synthetic_clock=True, home=None
     if speedup != 1:
         cmd += ' --speedup=%f' % speedup
     print("Running: %s" % cmd)
-    ret = pexpect.spawn(cmd, logfile=sys.stdout, timeout=5)
+    ret = pexpect.spawn(cmd, logfile=sys.stdout, timeout=5, ignore_sighup=False)
     ret.delaybeforesend = 0
     pexpect_autoclose(ret)
     ret.expect('Waiting for connection')
