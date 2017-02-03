@@ -532,16 +532,9 @@ def setup_rc(mavproxy):
 def fly_mission(mavproxy, mav, filename, height_accuracy=-1, target_altitude=None):
     '''fly a mission from a file'''
     global homeloc
-    print("Flying mission %s" % filename)
-    
-     # wait for EKF to settle
-    wait_seconds(mav, 15)
-    
-    mavproxy.send('arm throttle\n')
-    mavproxy.expect('ARMED')    
-    
+    print("Flying mission %s" % filename)        
     mavproxy.send('wp load %s\n' % filename)
-    mavproxy.expect('Flight plan received')
+    mavproxy.expect('flight plan received')
     mavproxy.send('wp list\n')
     mavproxy.expect('Requesting [0-9]+ waypoints')
         
