@@ -1,5 +1,5 @@
 #!/bin/bash
-AP_HOME="/home/moses/research/software/ap_plane3.5.1"
+AP_HOME="/home/moses/research/software/ap_plane_bug2835"
 INSTRUMENTER="/home/moses/research/software/codeinstrumenter"
 
 # echo "Generating Ardupilot bitcode"
