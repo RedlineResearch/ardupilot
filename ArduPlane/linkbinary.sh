@@ -1,6 +1,21 @@
 #!/bin/bash
-AP_HOME="/home/moses/research/software/ap_plane3.5.1"
-INSTRUMENTER="/home/moses/research/software/codeinstrumenter"
+
+LOCAL_APHOME="/home/moses/research/software/ap_plane3.5.1"
+SERVER_APHOME="/home/hhuang04/ap_plane3.5.1"
+LOCAL_INSTR="/home/moses/research/software/codeinstrumenter"
+SERVER_INSTR="/home/hhuang04/instrumenter"
+
+if [ "$1" == "local" ]; then
+    AP_HOME=$LOCAL_APHOME
+    INSTRUMENTER=$LOCAL_INSTR
+else
+    AP_HOME=$SERVER_APHOME
+    INSTRUMENTER=$SERVER_INSTR
+fi 
+
+echo $AP_HOME
+echo $INSTRUMENTER
+
 flist_tmp="filelist_tmp.txt"
 flist="filelist.txt"
 
@@ -13,18 +28,19 @@ llvm-link -o $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full.bc `find $AP_HOME/tmp/
 echo "Make sure that Instrumenter and Oscope API is built"
 cd $INSTRUMENTER
 make oscope
-make instr
+make local_instr
 
 echo "Combine Ardupilot and Instrumentation Bicodes"
 llvm-link -o $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_instr.bc $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full.bc $INSTRUMENTER/oscopeAPI.bc
 
 echo "Build the list of files to instrument"
 # Current directory
+cd $AP_HOME/ArduPlane
 find . -name "*.cpp" | cut -d'/' -f 2- | grep -v "test" >> $flist_tmp
-cd ../libraries
-find `pwd` -name "*.cpp" | grep -v "example" | egrep -v "c\+\+" | grep -v "benchmark" | grep -v "AC_" | grep -v "tests" | grep -v "AP_HAL_FLYMAPLE" | grep -v "AP_HAL_Linux" | grep -v "AP_HAL_PX4" | grep -v "AP_HAL_QURT" | grep -v "AP_HAL_VRBRAIN" | grep -v "utility/Print.cpp" >> ../ArduPlane/filelist_test.txt
+cd $AP_HOME/libraries
+find `pwd` -name "*.cpp" | grep -v "example" | egrep -v "c\+\+" | grep -v "benchmark" | grep -v "AC_" | grep -v "tests" | grep -v "AP_HAL_FLYMAPLE" | grep -v "AP_HAL_Linux" | grep -v "AP_HAL_PX4" | grep -v "AP_HAL_QURT" | grep -v "AP_HAL_VRBRAIN" | grep -v "utility/Print.cpp" >> $AP_HOME/ArduPlane/$flist_tmp
 
-cd ../ArduPlane
+cd $AP_HOME/ArduPlane
 echo "# This should contain the filename of the files that need to be instrumented" > $flist
 echo "# To comment out a line,  add # to start of line" >> $flist
 echo "" >> $flist
