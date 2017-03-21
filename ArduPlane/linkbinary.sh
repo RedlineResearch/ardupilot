@@ -29,7 +29,12 @@ llvm-link -o $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full.bc `find $AP_HOME/tmp/
 echo "Make sure that Instrumenter and Oscope API is built"
 cd $INSTRUMENTER
 make oscope
-make local_instr
+
+if [ "$1" == "local" ]; then
+    make local_instr
+else
+    make server_instr
+fi
 
 echo "Combine Ardupilot and Instrumentation Bicodes"
 llvm-link -o $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_instr.bc $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full.bc $INSTRUMENTER/oscopeAPI.bc
