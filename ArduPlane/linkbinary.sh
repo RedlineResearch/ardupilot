@@ -1,7 +1,7 @@
 #!/bin/bash
 
 LOCAL_APHOME="/home/moses/research/software/ap_plane3.5.1"
-SERVER_APHOME="/home/hhuang04/ap_plane3.5.1"
+SERVER_APHOME="/home/hhuang04/ap_plane_bug2835"
 LOCAL_INSTR="/home/moses/research/software/codeinstrumenter"
 SERVER_INSTR="/home/hhuang04/instrumenter"
 
@@ -55,10 +55,8 @@ rm $flist_tmp
 
 echo "Inject instrumentation into Ardupilot bitcode"
 
-$INSTRUMENTER/instrumenter -debug -allF -init_func=_ZN5Plane4loopEv -sfile=$AP_HOME/ArduPlane/$flist -o $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_inject.bc $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_instr.bc 
+$INSTRUMENTER/instrumenter $2 -init_func=_ZN5Plane4loopEv -filelist=$AP_HOME/ArduPlane/$flist -o $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_inject.bc $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_instr.bc 
 
-
-#-arg=/data/hhuang04/ap3.5.1/ArduPlane/varlist.txt
 echo "Compiling to assembly"
 llc -o $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_inject.s $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_inject.bc 
 
