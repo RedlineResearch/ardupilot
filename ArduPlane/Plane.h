@@ -978,7 +978,9 @@ private:
     void dataflash_periodic(void);
     uint16_t throttle_min(void) const;
     void printTime();
-    
+    void printScheTasks(std::vector< std::pair<std::string, int> > tasks_ran,
+    					uint16_t time_avail);
+
 public:
     void mavlink_delay_cb();
     void failsafe_check(void);

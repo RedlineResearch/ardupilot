@@ -15,7 +15,7 @@ SKETCHCPP      := $(SRCROOT)/$(SKETCH).cpp
 
 # Sketch object files
 SKETCHOBJS := $(subst $(SRCROOT),$(BUILDROOT),$(SKETCHSRCS))
-SKETCHOBJS := $(addsuffix .o,$(basename $(SKETCHOBJS)))
+SKETCHOBJS := $(addsuffix .bc,$(basename $(SKETCHOBJS)))
 
 # get list of libraries from make.inc
 include $(MAKE_INC)
@@ -72,8 +72,8 @@ SKETCHLIBS		:=	$(wildcard $(addprefix $(SKETCHBOOK)/libraries/,$(LIBTOKENS)))
 SKETCHLIBNAMES		:=	$(notdir $(SKETCHLIBS))
 SKETCHLIBSRCDIRS	:=	$(SKETCHLIBS) $(addsuffix /utility,$(SKETCHLIBS))
 SKETCHLIBSRCS		:=	$(wildcard $(foreach suffix,$(SRCSUFFIXES),$(addsuffix /$(suffix),$(SKETCHLIBSRCDIRS))))
-SKETCHLIBOBJS		:=	$(addsuffix .o,$(basename $(subst $(SKETCHBOOK),$(BUILDROOT),$(SKETCHLIBSRCS))))
-SKETCHLIBINCLUDES	:=	-I$(SKETCHBOOK)/libraries/
+SKETCHLIBOBJS		:=	$(addsuffix .bc,$(basename $(subst $(SKETCHBOOK),$(BUILDROOT),$(SKETCHLIBSRCS))))
+SKETCHLIBINCLUDES	:=	-I$(SKETCHBOOK)/libraries/ -I$(BUILDROOT)/libraries/ -I$(BUILDROOT)/libraries/GCS_MAVLink/
 SKETCHLIBSRCSRELATIVE	:=	$(subst $(SKETCHBOOK)/,,$(SKETCHLIBSRCS))
 
 ifeq ($(VERBOSE),)

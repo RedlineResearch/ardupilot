@@ -87,15 +87,15 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] PROGMEM = {
 
 void Plane::teardown()
 {
-	logFile.flush();
-	logFile.close();
+//	logFile.flush();
+//	logFile.close();
 }
 
 void Plane::setup() 
 {
-	logFile.open("/home/moses/data/ap_plane_3.5.1/freq.txt", std::ios::out | std::ios::trunc);
-	logFile << "Time, Alt, Roll, Pitch, Yaw, Pos_N, Pos_E, Pos_D, Vel_N, Vel_E, Vel_D, Throttle\n";
-	logFile.flush();
+//	logFile.open("/home/moses/data/3.5.1/freq.txt", std::ios::out | std::ios::trunc);
+//	logFile << "Time, Alt, Lat, Long, Pos_N, Pos_E, Pos_D, Vel_N, Vel_E, Vel_D, Throttle\n";
+//	logFile.flush();
 
     cliSerial = hal.console;
 
@@ -150,7 +150,8 @@ void Plane::loop()
     scheduler.run(remaining);
 
     // Now do data capture
-    printTime();
+    // printScheTasks(result.first, result.second);
+    // printTime();
 }
 
 // update AHRS system
@@ -924,7 +925,6 @@ void Plane::update_optical_flow(void)
 }
 #endif
 
-
 const static char *abs_pos = "0 0 0 ";
 
 void Plane::printTime()
@@ -952,9 +952,7 @@ void Plane::printTime()
     }
 
     strncat(finalBuf, locBuf, strlen(locBuf));
-
     // Capturing roll, pitch and yaw
-
 
     // Rel position
     Vector3f pos, vel;
@@ -983,6 +981,31 @@ void Plane::printTime()
     strncat(finalBuf, motorBuf, strlen(motorBuf));
     logFile << finalBuf << std::endl;
 	logFile.flush();
+}
+
+/**
+ * printScheTasks - Write out the tasks executed and their time spent
+ * to file. Assuming that both vectors have the same length
+ */
+void Plane::printScheTasks(std::vector< std::pair<std::string, int> > tasks_ran,
+					uint16_t time_avail)
+{
+    // Time Buf needs to be sufficiently large so that we don't get buffer overflow
+	char timeBuf[2000];
+	char nameBuf[50];
+
+	memset(timeBuf, 0, 2000);
+    memset(nameBuf, 0, 50);
+	for (std::vector<std::pair<std::string, int>>::iterator it = tasks_ran.begin();
+		it != tasks_ran.end(); ++it) {
+        char newBuf[50];
+		sprintf(newBuf, "%s:%d ", (*it).first.c_str(), (*it).second);
+		strncat(timeBuf, newBuf, strlen(newBuf));
+    }
+
+    sprintf(nameBuf, "TimeAvail:%u ", time_avail);
+	strncat(timeBuf, nameBuf, strlen(nameBuf));
+	logFile << timeBuf;
 }
 
 AP_HAL_MAIN_CALLBACKS(&plane);

@@ -60,12 +60,13 @@ def deltree(path):
 
 def build_SIL(atype, target='sitl', j=1):
     '''build desktop SIL'''
-    run_cmd("make clean",
+    run_cmd("make clean", 
             dir=reltopdir(atype),
             checkfail=True)
+    # Will automatically fail
     run_cmd("make -j%u %s" % (j, target),
             dir=reltopdir(atype),
-            checkfail=True)
+            checkfail=False)
     return True
 
 # list of pexpect children to close on exit
@@ -111,9 +112,9 @@ def start_SIL(atype, valgrind=False, wipe=False, synthetic_clock=True, home=None
     cmd=""
     if valgrind and os.path.exists('/usr/bin/valgrind'):
         cmd += 'valgrind -q --log-file=%s-valgrind.log ' % atype
-    executable = reltopdir('tmp/%s.build/%s.elf' % (atype, atype))
+    executable = reltopdir('tmp/%s.build2/%s.elf' % (atype, atype))
     if not os.path.exists(executable):
-        executable = '/tmp/%s.build/%s.elf' % (atype, atype)
+        executable = '/tmp/%s.build2/%s.elf' % (atype, atype)
     cmd += executable
     if wipe:
         cmd += ' -w'
@@ -126,7 +127,7 @@ def start_SIL(atype, valgrind=False, wipe=False, synthetic_clock=True, home=None
     if speedup != 1:
         cmd += ' --speedup=%f' % speedup
     print("Running: %s" % cmd)
-    ret = pexpect.spawn(cmd, logfile=sys.stdout, timeout=5)
+    ret = pexpect.spawn(cmd, logfile=sys.stdout, timeout=5, ignore_sighup=False)
     ret.delaybeforesend = 0
     pexpect_autoclose(ret)
     ret.expect('Waiting for connection')

@@ -335,13 +335,13 @@ void AP_AutoTune::write_log(float servo, float demanded, float achieved)
 
     struct log_ATRP pkt = {
         LOG_PACKET_HEADER_INIT(LOG_ATRP_MSG),
-        time_us    : hal.scheduler->micros64(),
-        type       : type,
+        time_us    : (uint64_t)hal.scheduler->micros64(),
+        type       : static_cast<uint8_t>(type),
     	state      : (uint8_t)state,
         servo      : (int16_t)(servo*100),
-        demanded   : demanded,
-        achieved   : achieved,
-        P          : current.P.get()
+        demanded   : (float)demanded,
+        achieved   : (float)achieved,
+        P          : (float)current.P.get()
     };
     dataflash.WriteBlock(&pkt, sizeof(pkt));
 }
