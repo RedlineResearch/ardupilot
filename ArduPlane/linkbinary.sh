@@ -53,7 +53,7 @@ sort < $flist_tmp >> $flist
 rm $flist_tmp
 
 echo "Inject instrumentation into Ardupilot bitcode"
-$INSTRUMENTER/instrumenter $2 -init_func=_ZN5Plane4loopEv -filelist=$AP_HOME/ArduPlane/$flist -o $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_inject.bc $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_instr.bc 
+$INSTRUMENTER/instrumenter $2 -instrIO -init_func=_ZN5Plane4loopEv -filelist=$AP_HOME/ArduPlane/$flist -o $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_inject.bc $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_instr.bc 
 
 echo "Compiling to assembly"
 llc -o $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_inject.s $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_inject.bc 
