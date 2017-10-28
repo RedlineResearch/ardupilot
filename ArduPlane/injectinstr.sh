@@ -18,7 +18,7 @@ echo $INSTRUMENTER
 
 # echo "Generating Ardupilot bitcode"
 echo "Inject instrumentation into Ardupilot bitcode"
-$INSTRUMENTER/instrumenter $2 -init_func=_ZN5Plane4loopEv -filelist=$AP_HOME/ArduPlane/filelist.txt -o $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_inject.bc $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_instr.bc 
+$INSTRUMENTER/instrumenter $2 -instrST -init_func=_ZN5Plane4loopEv -o $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_inject.bc $AP_HOME/ArduPlane/filelist.txt $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_instr.bc 
 
 #-arg=/data/hhuang04/ap3.5.1/ArduPlane/varlist.txt
 echo "Compiling to assembly"
