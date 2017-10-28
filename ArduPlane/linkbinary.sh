@@ -1,5 +1,6 @@
 #!/bin/bash
 
+COMPILER=g++-5
 LOCAL_APHOME="/home/moses/research/software/ap_plane3.5.1"
 SERVER_APHOME="/home/hhuang04/ap_plane_bug2835"
 LOCAL_INSTR="/home/moses/research/software/codeinstrumenter"
@@ -54,11 +55,10 @@ sort < $flist_tmp >> $flist
 rm $flist_tmp
 
 echo "Inject instrumentation into Ardupilot bitcode"
-
-$INSTRUMENTER/instrumenter $2 -init_func=_ZN5Plane4loopEv -filelist=$AP_HOME/ArduPlane/$flist -o $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_inject.bc $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_instr.bc 
+$INSTRUMENTER/instrumenter $2 -instrIO -init_func=_ZN5Plane4loopEv -filelist=$AP_HOME/ArduPlane/$flist -o $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_inject.bc $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_instr.bc 
 
 echo "Compiling to assembly"
 llc -o $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_inject.s $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_inject.bc 
 
 echo "Compiling Assembly into ArduPlane.elf"
-g++ -D_GNU_SOURCE  -g  -Wformat -Wshadow -Wpointer-arith -Wcast-align -Wlogical-op -Wwrite-strings -Wformat=2 -Wno-unused-parameter -o $AP_HOME/tmp/ArduPlane.build2/ArduPlane.elf $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_inject.s -lm -pthread
+$COMPILER -D_GNU_SOURCE  -g  -Wformat -Wshadow -Wpointer-arith -Wcast-align -Wlogical-op -Wwrite-strings -Wformat=2 -Wno-unused-parameter -o $AP_HOME/tmp/ArduPlane.build2/ArduPlane.elf $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_inject.s -lm -pthread
