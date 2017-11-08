@@ -146,7 +146,7 @@ def start_MAVProxy_SIL(atype, aircraft=None, setup=False, master='tcp:127.0.0.1:
     global close_list
     MAVPROXY = os.getenv('MAVPROXY_CMD', 'mavproxy.py')
     master_and_port = master + str(port+10*instance)
-    outport = 14550 + 10*instance
+    outport = 14550
     cmd = MAVPROXY + ' --master={0} --out=127.0.0.1:{1}'.format(master_and_port, outport)
     if setup:
         cmd += ' --setup'

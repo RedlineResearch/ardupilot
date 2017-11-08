@@ -160,7 +160,7 @@ def takeoff(mavproxy, mav):
     # a bit faster again, straighten rudder
     mavproxy.send('rc 3 1700\n')
     mavproxy.send('rc 4 1500\n')
-    mav.recv_match(condition='VFR_HUD.groundspeed>12', blocking=True)
+    #mav.recv_match(condition='VFR_HUD.groundspeed>12', blocking=True)
 
     # hit the gas harder now, and give it some more elevator
     mavproxy.send('rc 2 1100\n') 
@@ -689,8 +689,8 @@ def fly_ArduPlane(viewerip=None, map=False, speedup=1,
     util.pexpect_close(sil)
 
     sil = util.start_SIL('ArduPlane', model='jsbsim', home=HOME_LOCATION, speedup=speedup,
-                         elfname=elfname, instance=instance+1)
-    mavproxy = util.start_MAVProxy_SIL('ArduPlane', options=options, instance=instance+1)
+                         elfname=elfname, instance=instance)
+    mavproxy = util.start_MAVProxy_SIL('ArduPlane', options=options, instance=instance)
     mavproxy.expect('Telemetry log: (\S+)')
     logfile = mavproxy.match.group(1)
     print("LOGFILE %s" % logfile)
