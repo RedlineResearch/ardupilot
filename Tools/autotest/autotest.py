@@ -141,6 +141,7 @@ parser.add_option("--timeout", default=3000, type='int', help='maximum runtime i
 parser.add_option("--speedup", default=1, type='int', help='Speed up for simulator, defaults to 1')
 parser.add_option("--wpfile", dest='wpfile', type=str, help='Name of wp file', default='auto_mission.txt')
 parser.add_option("--elfname", dest='elfname', type=str, help='Name of elf binary file', default='ArduPlane')
+parser.add_option("--instance", dest='instance', type=int, default=0, help='The instance number, defaults to 0')
 parser.add_option("-j", default=1, type='int', help='build CPUs')
 
 opts, args = parser.parse_args()
@@ -234,7 +235,7 @@ def run_step(step):
 
     if step == 'fly.ArduPlane':
         return arduplane.fly_ArduPlane(viewerip=opts.viewerip, map=opts.map, speedup=opts.speedup, 
-                                       wpfile=opts.wpfile, elfname=opts.elfname)
+                                       wpfile=opts.wpfile, elfname=opts.elfname, instance=opts.instance)
 
     if step == 'drive.APMrover2':
         return apmrover2.drive_APMrover2(viewerip=opts.viewerip, map=opts.map)
@@ -429,12 +430,12 @@ def run_tests(steps):
     return passed
 
 
-util.mkdir_p(util.reltopdir('../buildlogs'))
+# util.mkdir_p(util.reltopdir('../buildlogs'))
 
-lck = util.lock_file(util.reltopdir('../buildlogs/autotest.lck'))
-if lck is None:
-    print("autotest is locked - exiting")
-    sys.exit(0)
+# lck = util.lock_file(util.reltopdir('../buildlogs/autotest.lck'))
+# if lck is None:
+#     print("autotest is locked - exiting")
+#     sys.exit(0)
 
 atexit.register(util.pexpect_close_all)
 

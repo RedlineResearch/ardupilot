@@ -107,7 +107,7 @@ def pexpect_drain(p):
         pass
 
 def start_SIL(atype, valgrind=False, wipe=False, synthetic_clock=True, home=None, model=None, speedup=1,
-              elfname='ArduPlane'):
+              elfname='ArduPlane', instance=0):
     '''launch a SIL instance'''
     import pexpect
     cmd=""
@@ -130,6 +130,8 @@ def start_SIL(atype, valgrind=False, wipe=False, synthetic_clock=True, home=None
         cmd += ' --model=%s' % model
     if speedup != 1:
         cmd += ' --speedup=%f' % speedup
+    if instance > 0:
+        cmd += ' --instance {}'.format(instance)
     print("Running: %s" % cmd)
     ret = pexpect.spawn(cmd, logfile=sys.stdout, timeout=5, ignore_sighup=False)
     ret.delaybeforesend = 0
@@ -137,13 +139,15 @@ def start_SIL(atype, valgrind=False, wipe=False, synthetic_clock=True, home=None
     ret.expect('Waiting for connection')
     return ret
 
-def start_MAVProxy_SIL(atype, aircraft=None, setup=False, master='tcp:127.0.0.1:5760',
-                       options=None, logfile=sys.stdout):
+def start_MAVProxy_SIL(atype, aircraft=None, setup=False, master='tcp:127.0.0.1:',
+                       options=None, logfile=sys.stdout, port=5760, instance=0):
     '''launch mavproxy connected to a SIL instance'''
     import pexpect
     global close_list
     MAVPROXY = os.getenv('MAVPROXY_CMD', 'mavproxy.py')
-    cmd = MAVPROXY + ' --master=%s --out=127.0.0.1:14550' % master
+    master_and_port = master + str(port+10*instance)
+    outport = 14550 + 10*instance
+    cmd = MAVPROXY + ' --master={0} --out=127.0.0.1:{1}'.format(master_and_port, outport)
     if setup:
         cmd += ' --setup'
     if aircraft is None:

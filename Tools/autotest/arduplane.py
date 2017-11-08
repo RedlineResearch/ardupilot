@@ -647,7 +647,7 @@ def generate_wpfile():
     return '{0},{1},585,354'.format(home_loc.deg_lat, LAND_LONG)
 
 def fly_ArduPlane(viewerip=None, map=False, speedup=1, 
-                  wpfile='auto_mission.txt', elfname='ArduPlane.elf'):
+                  wpfile='auto_mission.txt', elfname='ArduPlane.elf', instance=0):
     '''fly ArduPlane in SIL
 
     you can pass viewerip as an IP address to optionally send fg and
@@ -659,7 +659,9 @@ def fly_ArduPlane(viewerip=None, map=False, speedup=1,
 #     HOME_LOCATION = generate_wpfile().strip(' ')
     HOME_LOCATION = "-35.402830,149.165222,585.40,354"
 
-    options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --streamrate=10'
+    mav_sitl_port = 5501 + 10*instance
+    mav_out_port = 19550 + 10*instance
+    options = '--sitl=127.0.0.1:{0} --out=127.0.0.1:{1} --streamrate=10'.format(mav_sitl_port, mav_out_port)
     if viewerip:
         options += " --out=%s:14550" % viewerip
     if map:
@@ -668,9 +670,9 @@ def fly_ArduPlane(viewerip=None, map=False, speedup=1,
     # Have to modify this so that we're copying the no instrumentation arduplane binary to set things up
     # Then we copy over the actual one we're testing and running it 
     sil = util.start_SIL('ArduPlane', wipe=True, model='jsbsim', home=HOME_LOCATION, speedup=speedup,
-                         elfname=elfname)
+                         elfname=elfname, instance=instance)
     print("Starting MAVProxy")
-    mavproxy = util.start_MAVProxy_SIL('ArduPlane', options=options)
+    mavproxy = util.start_MAVProxy_SIL('ArduPlane', options=options, instance=instance)
     util.expect_setup_callback(mavproxy, expect_callback)
 
     mavproxy.expect('Telemetry log: (\S+)')
@@ -687,8 +689,8 @@ def fly_ArduPlane(viewerip=None, map=False, speedup=1,
     util.pexpect_close(sil)
 
     sil = util.start_SIL('ArduPlane', model='jsbsim', home=HOME_LOCATION, speedup=speedup,
-                         elfname=elfname)
-    mavproxy = util.start_MAVProxy_SIL('ArduPlane', options=options)
+                         elfname=elfname, instance=instance+1)
+    mavproxy = util.start_MAVProxy_SIL('ArduPlane', options=options, instance=instance+1)
     mavproxy.expect('Telemetry log: (\S+)')
     logfile = mavproxy.match.group(1)
     print("LOGFILE %s" % logfile)
@@ -713,9 +715,9 @@ def fly_ArduPlane(viewerip=None, map=False, speedup=1,
 
     # get a mavlink connection going
     try:
-        mav = mavutil.mavlink_connection('127.0.0.1:19550', robust_parsing=True)
+        mav = mavutil.mavlink_connection('127.0.0.1:{0}'.format(mav_out_port), robust_parsing=True)
     except Exception, msg:
-        print("Failed to start mavlink connection on 127.0.0.1:19550" % msg)
+        print('Failed to start mavlink connection on 127.0.0.1:{0}'.format(mav_out_port) % msg)
         raise
     mav.message_hooks.append(message_hook)
     mav.idle_hooks.append(idle_hook)
