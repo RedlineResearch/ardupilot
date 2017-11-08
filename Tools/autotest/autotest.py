@@ -139,6 +139,8 @@ parser.add_option("--map", action='store_true', default=False, help='show map')
 parser.add_option("--experimental", default=False, action='store_true', help='enable experimental tests')
 parser.add_option("--timeout", default=3000, type='int', help='maximum runtime in seconds')
 parser.add_option("--speedup", default=1, type='int', help='Speed up for simulator, defaults to 1')
+parser.add_option("--wpfile", dest='wpfile', type=str, help='Name of wp file', default='auto_mission.txt')
+parser.add_option("--elfname", dest='elfname', type=str, help='Name of elf binary file', default='ArduPlane')
 parser.add_option("-j", default=1, type='int', help='build CPUs')
 
 opts, args = parser.parse_args()
@@ -231,7 +233,8 @@ def run_step(step):
         return arducopter.fly_CopterAVC(viewerip=opts.viewerip, map=opts.map)
 
     if step == 'fly.ArduPlane':
-        return arduplane.fly_ArduPlane(viewerip=opts.viewerip, map=opts.map, speedup=opts.speedup)
+        return arduplane.fly_ArduPlane(viewerip=opts.viewerip, map=opts.map, speedup=opts.speedup, 
+                                       wpfile=opts.wpfile, elfname=opts.elfname)
 
     if step == 'drive.APMrover2':
         return apmrover2.drive_APMrover2(viewerip=opts.viewerip, map=opts.map)

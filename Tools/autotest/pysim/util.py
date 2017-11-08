@@ -106,15 +106,19 @@ def pexpect_drain(p):
     except pexpect.TIMEOUT:
         pass
 
-def start_SIL(atype, valgrind=False, wipe=False, synthetic_clock=True, home=None, model=None, speedup=1):
+def start_SIL(atype, valgrind=False, wipe=False, synthetic_clock=True, home=None, model=None, speedup=1,
+              elfname='ArduPlane'):
     '''launch a SIL instance'''
     import pexpect
     cmd=""
     if valgrind and os.path.exists('/usr/bin/valgrind'):
         cmd += 'valgrind -q --log-file=%s-valgrind.log ' % atype
-    executable = reltopdir('tmp/%s.build2/%s.elf' % (atype, atype))
-    if not os.path.exists(executable):
-        executable = '/tmp/%s.build2/%s.elf' % (atype, atype)
+    if (atype.find('ArduPlane') > -1):
+        executable = reltopdir('tmp/%s.build2/%s.elf' % (atype, elfname))
+    else:
+        executable = reltopdir('tmp/%s.build2/%s.elf' % (atype, atype))
+        if not os.path.exists(executable):
+            executable = '/tmp/%s.build2/%s.elf' % (atype, atype)
     cmd += executable
     if wipe:
         cmd += ' -w'

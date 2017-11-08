@@ -646,7 +646,8 @@ def generate_wpfile():
 
     return '{0},{1},585,354'.format(home_loc.deg_lat, LAND_LONG)
 
-def fly_ArduPlane(viewerip=None, map=False, speedup=1):
+def fly_ArduPlane(viewerip=None, map=False, speedup=1, 
+                  wpfile='auto_mission.txt', elfname='ArduPlane.elf'):
     '''fly ArduPlane in SIL
 
     you can pass viewerip as an IP address to optionally send fg and
@@ -666,7 +667,8 @@ def fly_ArduPlane(viewerip=None, map=False, speedup=1):
 
     # Have to modify this so that we're copying the no instrumentation arduplane binary to set things up
     # Then we copy over the actual one we're testing and running it 
-    sil = util.start_SIL('ArduPlane', wipe=True, model='jsbsim', home=HOME_LOCATION, speedup=speedup)
+    sil = util.start_SIL('ArduPlane', wipe=True, model='jsbsim', home=HOME_LOCATION, speedup=speedup,
+                         elfname=elfname)
     print("Starting MAVProxy")
     mavproxy = util.start_MAVProxy_SIL('ArduPlane', options=options)
     util.expect_setup_callback(mavproxy, expect_callback)
@@ -684,7 +686,8 @@ def fly_ArduPlane(viewerip=None, map=False, speedup=1):
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
 
-    sil = util.start_SIL('ArduPlane', model='jsbsim', home=HOME_LOCATION, speedup=speedup)
+    sil = util.start_SIL('ArduPlane', model='jsbsim', home=HOME_LOCATION, speedup=speedup,
+                         elfname=elfname)
     mavproxy = util.start_MAVProxy_SIL('ArduPlane', options=options)
     mavproxy.expect('Telemetry log: (\S+)')
     logfile = mavproxy.match.group(1)
@@ -765,7 +768,7 @@ def fly_ArduPlane(viewerip=None, map=False, speedup=1):
 #         if not fly_CIRCLE(mavproxy, mav):
 #             print("Failed CIRCLE")
 #             failed = True
-        if not fly_mission(mavproxy, mav, os.path.join(testdir, WP_MISSION_FILENAME), height_accuracy = 10,
+        if not fly_mission(mavproxy, mav, os.path.join(testdir, wpfile), height_accuracy = 10,
                            target_altitude=homeloc.alt):
             print("Failed mission")
             failed = True
