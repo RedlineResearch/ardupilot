@@ -114,8 +114,12 @@ void Plane::setup()
     scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks));
 }
 
+unsigned long long loopCount = 0;
+
 void Plane::loop()
 {
+    loopCount++;
+    
     // wait for an INS sample
     ins.wait_for_sample();
 
