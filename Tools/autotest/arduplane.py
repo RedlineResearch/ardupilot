@@ -160,7 +160,7 @@ def takeoff(mavproxy, mav):
     # a bit faster again, straighten rudder
     mavproxy.send('rc 3 1700\n')
     mavproxy.send('rc 4 1500\n')
-    #mav.recv_match(condition='VFR_HUD.groundspeed>12', blocking=True)
+    mav.recv_match(condition='VFR_HUD.groundspeed>12', blocking=True)
 
     # hit the gas harder now, and give it some more elevator
     mavproxy.send('rc 2 1100\n') 
@@ -545,7 +545,7 @@ def fly_mission(mavproxy, mav, filename, height_accuracy=-1, target_altitude=Non
     # timeout is the number of seconds that the command should finish entirely
     if not wait_waypoint(mav, 1, 6, max_dist=300):
         return False
-    if not wait_groundspeed(mav, 0, 0.5, timeout=180): #In case we have go around
+    if not wait_groundspeed(mav, 0, 0.5, timeout=360): #In case we have go around
         return False
     print("Mission OK")
     return True
