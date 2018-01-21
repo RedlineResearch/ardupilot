@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 //
 // Simple test for the AP_Scheduler interface
 //
@@ -7,6 +5,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Scheduler/AP_Scheduler.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
@@ -28,6 +27,7 @@ private:
     void five_second_call(void);
 };
 
+static AP_BoardConfig board_config;
 static SchedTest schedtest;
 
 #define SCHED_TASK(func, _interval_ticks, _max_time_micros) SCHED_TASK_CLASS(SchedTest, &schedtest, func, _interval_ticks, _max_time_micros)
@@ -46,6 +46,9 @@ const AP_Scheduler::Task SchedTest::scheduler_tasks[] = {
 
 void SchedTest::setup(void)
 {
+
+    board_config.init();
+
     ins.init(scheduler.get_loop_rate_hz());
 
     // initialise the scheduler

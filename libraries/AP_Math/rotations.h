@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  * rotations.h
  * Copyright (C) Andrew Tridgell 2012
@@ -16,7 +15,7 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
+#pragma once
 
 // these rotations form a full set - every rotation in the following
 // list when combined with another in the list forms an entry which is

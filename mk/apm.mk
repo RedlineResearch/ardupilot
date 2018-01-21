@@ -22,6 +22,7 @@ include $(MK_DIR)/help.mk
 # common makefile components
 include $(MK_DIR)/targets.mk
 include $(MK_DIR)/sketch_sources.mk
+include $(SKETCHBOOK)/modules/uavcan/libuavcan/include.mk
 
 ifneq ($(MAKECMDGOALS),clean)
 
@@ -40,10 +41,6 @@ endif
 
 ifeq ($(HAL_BOARD),HAL_BOARD_VRBRAIN)
 include $(MK_DIR)/board_vrbrain.mk
-endif
-
-ifeq ($(HAL_BOARD),HAL_BOARD_FLYMAPLE)
-include $(MK_DIR)/board_flymaple.mk
 endif
 
 ifeq ($(HAL_BOARD),HAL_BOARD_QURT)

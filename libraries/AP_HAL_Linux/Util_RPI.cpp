@@ -2,9 +2,10 @@
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2 || \
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DARK || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI
 
 #include <stdio.h>
@@ -33,15 +34,15 @@ int UtilRPI::_check_rpi_version()
     hw = Util::from(hal.util)->get_hw_arm32();
 
     if (hw == UTIL_HARDWARE_RPI2) {
-        printf("Raspberry Pi 2 with BCM2709!\n");
+        printf("Raspberry Pi 2/3 with BCM2709!\n");
         _rpi_version = 2;
     } else if (hw == UTIL_HARDWARE_RPI1) {
         printf("Raspberry Pi 1 with BCM2708!\n");
         _rpi_version = 1;
     } else {
-        /* defaults to 1 */
-        fprintf(stderr, "Could not detect RPi version, defaulting to 1\n");
-        _rpi_version = 1;
+        /* defaults to RPi version 2/3 */
+        fprintf(stderr, "Could not detect RPi version, defaulting to 2/3\n");
+        _rpi_version = 2;
     }
     return _rpi_version;
 }

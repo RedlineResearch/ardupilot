@@ -43,7 +43,7 @@ bool ToneAlarm_Linux::init()
         return false;
     }
 
-    // set initial boot states. This prevents us issueing a arming
+    // set initial boot states. This prevents us issuing a arming
     // warning in plane and rover on every boot
     flags.armed = AP_Notify::flags.armed;
     flags.failsafe_battery = AP_Notify::flags.failsafe_battery;
@@ -63,6 +63,11 @@ void ToneAlarm_Linux::update()
 {
     // exit immediately if we haven't initialised successfully
     if (!_initialized) {
+        return;
+    }
+
+    // exit if buzzer is not enabled
+    if (pNotify->buzzer_enabled() == false) {
         return;
     }
 

@@ -1,9 +1,7 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /*
    Lead developers: Matthew Ridley and Andrew Tridgell
  
-   Please contribute your ideas! See http://dev.ardupilot.com for details
+   Please contribute your ideas! See http://dev.ardupilot.org for details
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,6 +19,10 @@
 
 #include "Tracker.h"
 
+#define FORCE_VERSION_H_INCLUDE
+#include "version.h"
+#undef FORCE_VERSION_H_INCLUDE
+
 #define SCHED_TASK(func, _interval_ticks, _max_time_micros) SCHED_TASK_CLASS(Tracker, &tracker, func, _interval_ticks, _max_time_micros)
 
 /*
@@ -35,6 +37,7 @@ const AP_Scheduler::Task Tracker::scheduler_tasks[] = {
     SCHED_TASK(update_tracking,        50,   1000),
     SCHED_TASK(update_GPS,             10,   4000),
     SCHED_TASK(update_compass,         10,   1500),
+    SCHED_TASK(update_battery,         10,   1500),
     SCHED_TASK(update_barometer,       10,   1500),
     SCHED_TASK(gcs_update,             50,   1700),
     SCHED_TASK(gcs_data_stream_send,   50,   3000),
@@ -42,6 +45,7 @@ const AP_Scheduler::Task Tracker::scheduler_tasks[] = {
     SCHED_TASK(barometer_accumulate,   50,    900),
     SCHED_TASK(ten_hz_logging_loop,    10,    300),
     SCHED_TASK(dataflash_periodic,     50,    300),
+    SCHED_TASK(ins_periodic,           50,     50),
     SCHED_TASK(update_notify,          50,    100),
     SCHED_TASK(check_usb_mux,          10,    300),
     SCHED_TASK(gcs_retry_deferred,     50,   1000),
@@ -57,14 +61,6 @@ void Tracker::setup()
 {
     // load the default values of variables listed in var_info[]
     AP_Param::setup_sketch_defaults();
-
-    // initialise notify
-    notify.init(false);
-
-    // antenna tracker does not use pre-arm checks or battery failsafe
-    AP_Notify::flags.pre_arm_check = true;
-    AP_Notify::flags.pre_arm_gps_check = true;
-    AP_Notify::flags.failsafe_battery = false;
 
     init_tracker();
 
@@ -91,10 +87,15 @@ void Tracker::dataflash_periodic(void)
     DataFlash.periodic_tasks();
 }
 
+void Tracker::ins_periodic()
+{
+    ins.periodic();
+}
+
 void Tracker::one_second_loop()
 {
     // send a heartbeat
-    gcs_send_message(MSG_HEARTBEAT);
+    gcs().send_message(MSG_HEARTBEAT);
 
     // make it possible to change orientation at runtime
     ahrs.set_orientation();
@@ -108,7 +109,7 @@ void Tracker::one_second_loop()
     one_second_counter++;
 
     if (one_second_counter >= 60) {
-        if(g.compass_enabled) {
+        if (g.compass_enabled) {
             compass.save_offsets();
         }
         one_second_counter = 0;
@@ -119,7 +120,6 @@ void Tracker::ten_hz_logging_loop()
 {
     if (should_log(MASK_LOG_IMU)) {
         DataFlash.Log_Write_IMU(ins);
-        DataFlash.Log_Write_IMUDT(ins);
     }
     if (should_log(MASK_LOG_ATTITUDE)) {
         Log_Write_Attitude();
@@ -135,6 +135,7 @@ void Tracker::ten_hz_logging_loop()
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 Tracker::Tracker(void)
+    : DataFlash(fwver.fw_string, g.log_bitmask)
 {
     memset(&current_loc, 0, sizeof(current_loc));
     memset(&vehicle, 0, sizeof(vehicle));

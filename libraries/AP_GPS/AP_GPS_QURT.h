@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,7 +16,10 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
+
 #include "AP_GPS.h"
+#include "GPS_Backend.h"
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_QURT
 
 class AP_GPS_QURT : public AP_GPS_Backend {
@@ -26,6 +28,8 @@ public:
     ~AP_GPS_QURT();
     
     bool read() override;
+
+    const char *name() const override { return "QURT"; }
 
 private:
     bool initialised = false;

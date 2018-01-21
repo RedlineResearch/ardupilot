@@ -1,6 +1,5 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
-   Please contribute your ideas! See http://dev.ardupilot.com for details
+   Please contribute your ideas! See http://dev.ardupilot.org for details
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -44,8 +43,8 @@ const StorageManager::StorageArea StorageManager::layout_default[STORAGE_NUM_ARE
     { StorageParam,   4096,  1280},
     { StorageRally,   5376,   300},
     { StorageFence,   5676,   256},
-    { StorageMission, 5932,  2132}, // leave 4 byte gap for PX4
-                                    // sentinal and expansion
+    { StorageMission, 5932,  2132}, 
+    { StorageKeys,    8064,    64}, 
 #endif
 #if STORAGE_NUM_AREAS >= 12
     { StorageParam,    8192,  1280},
@@ -70,8 +69,8 @@ const StorageManager::StorageArea StorageManager::layout_copter[STORAGE_NUM_AREA
     { StorageParam,   4096,  1280},
     { StorageRally,   5376,   300},
     { StorageFence,   5676,   256},
-    { StorageMission, 5932,  2132}, // leave 128 byte gap for
-                                    // expansion and PX4 sentinal
+    { StorageMission, 5932,  2132},
+    { StorageKeys,    8064,    64}, 
 #endif
 #if STORAGE_NUM_AREAS >= 12
     { StorageParam,    8192,  1280},

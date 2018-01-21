@@ -1,15 +1,15 @@
-#include <AP_HAL/AP_HAL.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#include "Storage.h"
 
 #include <assert.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <stdio.h>
-#include "Storage.h"
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 using namespace Linux;
 
@@ -20,11 +20,14 @@ using namespace Linux;
 
 // name the storage file after the sketch so you can use the same board
 // card for ArduCopter and ArduPlane
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
-#define STORAGE_DIR "/data/ftp/internal_000/APM"
+#if APM_BUILD_TYPE(APM_BUILD_Replay)
+#define STORAGE_DIR "."
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ
+#define STORAGE_DIR "/mnt/APM"
 #else
-#define STORAGE_DIR "/var/APM"
+#define STORAGE_DIR HAL_BOARD_STORAGE_DIRECTORY
 #endif
+
 #define STORAGE_FILE STORAGE_DIR "/" SKETCHNAME ".stg"
 
 extern const AP_HAL::HAL& hal;
@@ -33,7 +36,7 @@ void Storage::_storage_create(void)
 {
     mkdir(STORAGE_DIR, 0777);
     unlink(STORAGE_FILE);
-    int fd = open(STORAGE_FILE, O_RDWR|O_CREAT, 0666);
+    int fd = open(STORAGE_FILE, O_RDWR|O_CREAT|O_CLOEXEC, 0666);
     if (fd == -1) {
         AP_HAL::panic("Failed to create " STORAGE_FILE);
     }
@@ -55,10 +58,10 @@ void Storage::_storage_open(void)
     }
 
     _dirty_mask = 0;
-    int fd = open(STORAGE_FILE, O_RDWR);
+    int fd = open(STORAGE_FILE, O_RDWR|O_CLOEXEC);
     if (fd == -1) {
         _storage_create();
-        fd = open(STORAGE_FILE, O_RDWR);
+        fd = open(STORAGE_FILE, O_RDWR|O_CLOEXEC);
         if (fd == -1) {
             AP_HAL::panic("Failed to open " STORAGE_FILE);
         }
@@ -78,7 +81,7 @@ void Storage::_storage_open(void)
     if (ret != sizeof(_buffer)) {
         close(fd);
         _storage_create();
-        fd = open(STORAGE_FILE, O_RDONLY);
+        fd = open(STORAGE_FILE, O_RDONLY|O_CLOEXEC);
         if (fd == -1) {
             AP_HAL::panic("Failed to open " STORAGE_FILE);
         }
@@ -107,7 +110,7 @@ void Storage::_mark_dirty(uint16_t loc, uint16_t length)
     }
 }
 
-void Storage::read_block(void *dst, uint16_t loc, size_t n) 
+void Storage::read_block(void *dst, uint16_t loc, size_t n)
 {
     if (loc >= sizeof(_buffer)-(n-1)) {
         return;
@@ -116,7 +119,7 @@ void Storage::read_block(void *dst, uint16_t loc, size_t n)
     memcpy(dst, &_buffer[loc], n);
 }
 
-void Storage::write_block(uint16_t loc, const void *src, size_t n) 
+void Storage::write_block(uint16_t loc, const void *src, size_t n)
 {
     if (loc >= sizeof(_buffer)-(n-1)) {
         return;
@@ -135,9 +138,9 @@ void Storage::_timer_tick(void)
     }
 
     if (_fd == -1) {
-        _fd = open(STORAGE_FILE, O_WRONLY);
+        _fd = open(STORAGE_FILE, O_WRONLY|O_CLOEXEC);
         if (_fd == -1) {
-            return;    
+            return;
         }
     }
 
@@ -155,11 +158,11 @@ void Storage::_timer_tick(void)
     }
     uint32_t write_mask = (1U<<i);
     // see how many lines to write
-    for (n=1; (i+n) < LINUX_STORAGE_NUM_LINES && 
+    for (n=1; (i+n) < LINUX_STORAGE_NUM_LINES &&
              n < (LINUX_STORAGE_MAX_WRITE>>LINUX_STORAGE_LINE_SHIFT); n++) {
         if (!(_dirty_mask & (1<<(n+i)))) {
             break;
-        }        
+        }
         // mark that line clean
         write_mask |= (1<<(n+i));
     }
@@ -186,5 +189,3 @@ void Storage::_timer_tick(void)
         }
     }
 }
-
-#endif // CONFIG_HAL_BOARD

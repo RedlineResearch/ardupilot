@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  * location.cpp
  * Copyright (C) Andrew Tridgell 2011
@@ -25,32 +24,10 @@
 #include "AP_Math.h"
 #include "location.h"
 
-// scaling factor from 1e-7 degrees to meters at equater
-// == 1.0e-7 * DEG_TO_RAD * RADIUS_OF_EARTH
-#define LOCATION_SCALING_FACTOR 0.011131884502145034f
-// inverse of LOCATION_SCALING_FACTOR
-#define LOCATION_SCALING_FACTOR_INV 89.83204953368922f
-
 float longitude_scale(const struct Location &loc)
 {
-#if HAL_CPU_CLASS < HAL_CPU_CLASS_150
-    static int32_t last_lat;
-    static float scale = 1.0;
-    // don't optimise on faster CPUs. It causes some minor errors on Replay
-    if (labs(last_lat - loc.lat) < 100000) {
-        // we are within 0.01 degrees (about 1km) of the
-        // same latitude. We can avoid the cos() and return
-        // the same scale factor.
-        return scale;
-    }
-    scale = cosf(loc.lat * 1.0e-7f * DEG_TO_RAD);
-    scale = constrain_float(scale, 0.01f, 1.0f);
-    last_lat = loc.lat;
-    return scale;
-#else
     float scale = cosf(loc.lat * 1.0e-7f * DEG_TO_RAD);
     return constrain_float(scale, 0.01f, 1.0f);
-#endif
 }
 
 
@@ -60,7 +37,7 @@ float get_distance(const struct Location &loc1, const struct Location &loc2)
 {
     float dlat              = (float)(loc2.lat - loc1.lat);
     float dlong             = ((float)(loc2.lng - loc1.lng)) * longitude_scale(loc2);
-    return pythagorous2(dlat, dlong) * LOCATION_SCALING_FACTOR;
+    return norm(dlat, dlong) * LOCATION_SCALING_FACTOR;
 }
 
 // return distance in centimeters to between two locations
@@ -69,13 +46,29 @@ uint32_t get_distance_cm(const struct Location &loc1, const struct Location &loc
     return get_distance(loc1, loc2) * 100;
 }
 
+// return horizontal distance between two positions in cm
+float get_horizontal_distance_cm(const Vector3f &origin, const Vector3f &destination)
+{
+    return norm(destination.x-origin.x,destination.y-origin.y);
+}
+
 // return bearing in centi-degrees between two locations
 int32_t get_bearing_cd(const struct Location &loc1, const struct Location &loc2)
 {
     int32_t off_x = loc2.lng - loc1.lng;
     int32_t off_y = (loc2.lat - loc1.lat) / longitude_scale(loc2);
-    int32_t bearing = 9000 + atan2f(-off_y, off_x) * 5729.57795f;
+    int32_t bearing = 9000 + atan2f(-off_y, off_x) * DEGX100;
     if (bearing < 0) bearing += 36000;
+    return bearing;
+}
+
+// return bearing in centi-degrees between two positions
+float get_bearing_cd(const Vector3f &origin, const Vector3f &destination)
+{
+    float bearing = atan2f(destination.y-origin.y, destination.x-origin.x) * DEGX100;
+    if (bearing < 0) {
+        bearing += 36000.0f;
+    }
     return bearing;
 }
 
@@ -150,87 +143,14 @@ Vector2f location_diff(const struct Location &loc1, const struct Location &loc2)
 }
 
 /*
-  wrap an angle in centi-degrees to 0..35999
+  return the distance in meters in North/East/Down plane as a N/E/D vector
+  from loc1 to loc2
  */
-int32_t wrap_360_cd(int32_t error)
+Vector3f location_3d_diff_NED(const struct Location &loc1, const struct Location &loc2)
 {
-    if (error > 360000 || error < -360000) {
-        // for very large numbers use modulus
-        error = error % 36000;
-    }
-    while (error >= 36000) error -= 36000;
-    while (error < 0) error += 36000;
-    return error;
-}
-
-/*
-  wrap an angle in centi-degrees to -18000..18000
- */
-int32_t wrap_180_cd(int32_t error)
-{
-    if (error > 360000 || error < -360000) {
-        // for very large numbers use modulus
-        error = error % 36000;
-    }
-    while (error > 18000) { error -= 36000; }
-    while (error < -18000) { error += 36000; }
-    return error;
-}
-
-/*
-  wrap an angle in centi-degrees to 0..35999
- */
-float wrap_360_cd_float(float angle)
-{
-    if (angle >= 72000.0f || angle < -36000.0f) {
-        // for larger number use fmodulus
-        angle = fmod(angle, 36000.0f);
-    }
-    if (angle >= 36000.0f) angle -= 36000.0f;
-    if (angle < 0.0f) angle += 36000.0f;
-    return angle;
-}
-
-/*
-  wrap an angle in centi-degrees to -18000..18000
- */
-float wrap_180_cd_float(float angle)
-{
-    if (angle > 54000.0f || angle < -54000.0f) {
-        // for large numbers use modulus
-        angle = fmod(angle,36000.0f);
-    }
-    if (angle > 18000.0f) { angle -= 36000.0f; }
-    if (angle < -18000.0f) { angle += 36000.0f; }
-    return angle;
-}
-
-/*
-  wrap an angle defined in radians to -PI ~ PI (equivalent to +- 180 degrees)
- */
-float wrap_PI(float angle_in_radians)
-{
-    if (angle_in_radians > 10*M_PI || angle_in_radians < -10*M_PI) {
-        // for very large numbers use modulus
-        angle_in_radians = fmodf(angle_in_radians, 2*M_PI);
-    }
-    while (angle_in_radians > M_PI) angle_in_radians -= 2*M_PI;
-    while (angle_in_radians < -M_PI) angle_in_radians += 2*M_PI;
-    return angle_in_radians;
-}
-
-/*
- * wrap an angle in radians to 0..2PI
- */
-float wrap_2PI(float angle)
-{
-    if (angle > 10*M_PI || angle < -10*M_PI) {
-        // for very large numbers use modulus
-        angle = fmodf(angle, 2*M_PI);
-    }
-    while (angle > 2*M_PI) angle -= 2*M_PI;
-    while (angle < 0) angle += 2*M_PI;
-    return angle;
+    return Vector3f((loc2.lat - loc1.lat) * LOCATION_SCALING_FACTOR,
+                    (loc2.lng - loc1.lng) * LOCATION_SCALING_FACTOR * longitude_scale(loc1),
+                    (loc1.alt - loc2.alt) * 0.01f);
 }
 
 /*
@@ -259,6 +179,14 @@ bool location_sanitize(const struct Location &defaultLoc, struct Location &loc)
         loc.alt = defaultLoc.alt;
         has_changed = true;
     }
+
+    // limit lat/lng to appropriate ranges
+    if (!check_latlng(loc)) {
+        loc.lat = defaultLoc.lat;
+        loc.lng = defaultLoc.lng;
+        has_changed = true;
+    }
+
     return has_changed;
 }
 
@@ -285,7 +213,7 @@ void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon)
 
 void wgsllh2ecef(const Vector3d &llh, Vector3d &ecef) {
   double d = WGS84_E * sin(llh[0]);
-  double N = WGS84_A / sqrt(1. - d*d);
+  double N = WGS84_A / sqrt(1 - d*d);
 
   ecef[0] = (N + llh[2]) * cos(llh[0]) * cos(llh[1]);
   ecef[1] = (N + llh[2]) * cos(llh[0]) * sin(llh[1]);
@@ -305,15 +233,15 @@ void wgsecef2llh(const Vector3d &ecef, Vector3d &llh) {
 
   /* If we are close to the pole then convergence is very slow, treat this is a
    * special case. */
-  if (p < WGS84_A*1e-16) {
+  if (p < WGS84_A * double(1e-16)) {
     llh[0] = copysign(M_PI_2, ecef[2]);
     llh[2] = fabs(ecef[2]) - WGS84_B;
     return;
   }
 
-  /* Caluclate some other constants as defined in the Fukushima paper. */
+  /* Calculate some other constants as defined in the Fukushima paper. */
   const double P = p / WGS84_A;
-  const double e_c = sqrt(1. - WGS84_E*WGS84_E);
+  const double e_c = sqrt(1 - WGS84_E*WGS84_E);
   const double Z = fabs(ecef[2]) * e_c / WGS84_A;
 
   /* Initial values for S and C correspond to a zero height solution. */
@@ -336,7 +264,7 @@ void wgsecef2llh(const Vector3d &ecef, Vector3d &llh) {
     A_n = sqrt(S*S + C*C);
     D_n = Z*A_n*A_n*A_n + WGS84_E*WGS84_E*S*S*S;
     F_n = P*A_n*A_n*A_n - WGS84_E*WGS84_E*C*C*C;
-    B_n = 1.5*WGS84_E*S*C*C*(A_n*(P*S - Z*C) - WGS84_E*S*C);
+    B_n = double(1.5) * WGS84_E*S*C*C*(A_n*(P*S - Z*C) - WGS84_E*S*C);
 
     /* Update step. */
     S = D_n*F_n - B_n*S;
@@ -372,7 +300,7 @@ void wgsecef2llh(const Vector3d &ecef, Vector3d &llh) {
     }
 
     /* Check for convergence and exit early if we have converged. */
-    if (fabs(S - prev_S) < 1e-16 && fabs(C - prev_C) < 1e-16) {
+    if (fabs(S - prev_S) < double(1e-16) && fabs(C - prev_C) < double(1e-16)) {
       break;
     } else {
       prev_S = S;
@@ -383,4 +311,34 @@ void wgsecef2llh(const Vector3d &ecef, Vector3d &llh) {
   A_n = sqrt(S*S + C*C);
   llh[0] = copysign(1.0, ecef[2]) * atan(S / (e_c*C));
   llh[2] = (p*e_c*C + fabs(ecef[2])*S - WGS84_A*e_c*A_n) / sqrt(e_c*e_c*C*C + S*S);
+}
+
+// return true when lat and lng are within range
+bool check_lat(float lat)
+{
+    return fabsf(lat) <= 90;
+}
+bool check_lng(float lng)
+{
+    return fabsf(lng) <= 180;
+}
+bool check_lat(int32_t lat)
+{
+    return labs(lat) <= 90*1e7;
+}
+bool check_lng(int32_t lng)
+{
+    return labs(lng) <= 180*1e7;
+}
+bool check_latlng(float lat, float lng)
+{
+    return check_lat(lat) && check_lng(lng);
+}
+bool check_latlng(int32_t lat, int32_t lng)
+{
+    return check_lat(lat) && check_lng(lng);
+}
+bool check_latlng(Location loc)
+{
+    return check_lat(loc.lat) && check_lng(loc.lng);
 }

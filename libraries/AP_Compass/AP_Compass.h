@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include <inttypes.h>
@@ -13,26 +12,13 @@
 #include "CompassCalibrator.h"
 #include "AP_Compass_Backend.h"
 
-// compass product id
-#define AP_COMPASS_TYPE_UNKNOWN         0x00
-#define AP_COMPASS_TYPE_HIL             0x01
-#define AP_COMPASS_TYPE_HMC5843         0x02
-#define AP_COMPASS_TYPE_HMC5883L        0x03
-#define AP_COMPASS_TYPE_PX4             0x04
-#define AP_COMPASS_TYPE_VRBRAIN         0x05
-#define AP_COMPASS_TYPE_AK8963_MPU9250  0x06
-#define AP_COMPASS_TYPE_AK8963_I2C      0x07
-#define AP_COMPASS_TYPE_LSM303D         0x08
-
 // motor compensation types (for use with motor_comp_enabled)
 #define AP_COMPASS_MOT_COMP_DISABLED    0x00
 #define AP_COMPASS_MOT_COMP_THROTTLE    0x01
 #define AP_COMPASS_MOT_COMP_CURRENT     0x02
 
 // setup default mag orientation for some board types
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-# define MAG_BOARD_ORIENTATION ROTATION_ROLL_180
-#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
 # define MAG_BOARD_ORIENTATION ROTATION_YAW_90
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI)
@@ -41,6 +27,12 @@
 # define MAG_BOARD_ORIENTATION ROTATION_NONE
 #endif
 
+// define default compass calibration fitness and consistency checks
+#define AP_COMPASS_CALIBRATION_FITNESS_DEFAULT 16.0f
+#define AP_COMPASS_MAX_XYZ_ANG_DIFF radians(90.0f)
+#define AP_COMPASS_MAX_XY_ANG_DIFF radians(60.0f)
+#define AP_COMPASS_MAX_XY_LENGTH_DIFF 200.0f
+
 /**
    maximum number of compass instances available on this platform. If more
    than 1 then redundant sensors may be available
@@ -48,20 +40,15 @@
 #define COMPASS_MAX_INSTANCES 3
 #define COMPASS_MAX_BACKEND   3
 
-//MAXIMUM COMPASS REPORTS
-#define MAX_CAL_REPORTS 10
-#define CONTINUOUS_REPORTS 0
-#define AP_COMPASS_MAX_XYZ_ANG_DIFF radians(50.0f)
-#define AP_COMPASS_MAX_XY_ANG_DIFF radians(30.0f)
-#define AP_COMPASS_MAX_XY_LENGTH_DIFF 100.0f
-
 class Compass
 {
 friend class AP_Compass_Backend;
 public:
-    /// Constructor
-    ///
     Compass();
+
+    /* Do not allow copies */
+    Compass(const Compass &other) = delete;
+    Compass &operator=(const Compass&) = delete;
 
     /// Initialize the compass device.
     ///
@@ -125,27 +112,17 @@ public:
     // compass calibrator interface
     void compass_cal_update();
 
-    bool start_calibration(uint8_t i, bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot = false);
-    bool start_calibration_all(bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot = false);
-    bool start_calibration_mask(uint8_t mask, bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot=false);
+    void start_calibration_all(bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot = false);
 
-    void cancel_calibration(uint8_t i);
     void cancel_calibration_all();
-    void cancel_calibration_mask(uint8_t mask);
-
-    bool accept_calibration(uint8_t i);
-    bool accept_calibration_all();
-    bool accept_calibration_mask(uint8_t mask);
 
     bool compass_cal_requires_reboot() { return _cal_complete_requires_reboot; }
-    bool auto_reboot() { return _compass_cal_autoreboot; }
-    uint8_t get_cal_mask() const;
     bool is_calibrating() const;
 
     /*
       handle an incoming MAG_CAL command
     */
-    uint8_t handle_mag_cal_command(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_mag_cal_command(const mavlink_command_long_t &packet);
 
     void send_mag_cal_progress(mavlink_channel_t chan);
     void send_mag_cal_report(mavlink_channel_t chan);
@@ -273,7 +250,7 @@ public:
 
     // HIL methods
     void        setHIL(uint8_t instance, float roll, float pitch, float yaw);
-    void        setHIL(uint8_t instance, const Vector3f &mag);
+    void        setHIL(uint8_t instance, const Vector3f &mag, uint32_t last_update_usec);
     const Vector3f&   getHIL(uint8_t instance) const;
     void        _setup_earth_field();
 
@@ -283,6 +260,9 @@ public:
     // return last update time in microseconds
     uint32_t last_update_usec(void) const { return _state[get_primary()].last_update_usec; }
     uint32_t last_update_usec(uint8_t i) const { return _state[i].last_update_usec; }
+
+    uint32_t last_update_ms(void) const { return _state[get_primary()].last_update_ms; }
+    uint32_t last_update_ms(uint8_t i) const { return _state[i].last_update_ms; }
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -294,6 +274,22 @@ public:
         Vector3f field[COMPASS_MAX_INSTANCES];
     } _hil;
 
+    enum LearnType {
+        LEARN_NONE=0,
+        LEARN_INTERNAL=1,
+        LEARN_EKF=2
+    };
+
+    // return the chosen learning type
+    enum LearnType get_learn_type(void) const {
+        return (enum LearnType)_learn.get();
+    }
+
+    // return maximum allowed compass offsets
+    uint16_t get_offsets_max(void) const {
+        return (uint16_t)_offset_max.get();
+    }
+
 private:
     /// Register a new compas driver, allocating an instance number
     ///
@@ -301,17 +297,52 @@ private:
     uint8_t register_compass(void);
 
     // load backend drivers
-    void _add_backend(AP_Compass_Backend *backend);
+    bool _add_backend(AP_Compass_Backend *backend, const char *name, bool external);
     void _detect_backends(void);
 
-    //keep track of number of calibration reports sent
-    uint8_t _reports_sent[COMPASS_MAX_INSTANCES];
+    // compass cal
+    bool _accept_calibration(uint8_t i);
+    bool _accept_calibration_mask(uint8_t mask);
+    void _cancel_calibration(uint8_t i);
+    void _cancel_calibration_mask(uint8_t mask);
+    uint8_t _get_cal_mask() const;
+    bool _start_calibration(uint8_t i, bool retry=false, float delay_sec=0.0f);
+    bool _start_calibration_mask(uint8_t mask, bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot=false);
+    bool _auto_reboot() { return _compass_cal_autoreboot; }
+
+    // see if we already have probed a driver by bus type
+    bool _have_driver(AP_HAL::Device::BusType bus_type, uint8_t bus_num, uint8_t address, uint8_t devtype) const;
+
+
+    //keep track of which calibrators have been saved
+    bool _cal_saved[COMPASS_MAX_INSTANCES];
+    bool _cal_autosave;
 
     //autoreboot after compass calibration
     bool _compass_cal_autoreboot;
     bool _cal_complete_requires_reboot;
     bool _cal_has_run;
 
+    // enum of drivers for COMPASS_TYPEMASK
+    enum DriverType {
+        DRIVER_HMC5883  =0,
+        DRIVER_LSM303D  =1,
+        DRIVER_AK8963   =2,
+        DRIVER_BMM150   =3,
+        DRIVER_LSM9DS1  =4,
+        DRIVER_LIS3MDL  =5,
+        DRIVER_AK09916  =6,
+        DRIVER_IST8310  =7,
+        DRIVER_ICM20948 =8,
+        DRIVER_MMC3416  =9,
+        DRIVER_QFLIGHT  =10,
+        DRIVER_UAVCAN   =11,
+        DRIVER_QMC5883  =12,
+        DRIVER_SITL     =13,
+    };
+
+    bool _driver_enabled(enum DriverType driver_type);
+    
     // backend objects
     AP_Compass_Backend *_backends[COMPASS_MAX_BACKEND];
     uint8_t     _backend_count;
@@ -377,7 +408,12 @@ private:
         // when we last got data
         uint32_t    last_update_ms;
         uint32_t    last_update_usec;
+
+        // board specific orientation
+        enum Rotation rotation;
     } _state[COMPASS_MAX_INSTANCES];
+
+    AP_Int16 _offset_max;
 
     CompassCalibrator _calibrator[COMPASS_MAX_INSTANCES];
 
@@ -385,4 +421,7 @@ private:
     bool _hil_mode:1;
 
     AP_Float _calibration_threshold;
+
+    // mask of driver types to not load. Bit positions match DEVTYPE_ in backend
+    AP_Int32 _driver_type_mask;
 };

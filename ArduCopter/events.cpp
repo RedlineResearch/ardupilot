@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Copter.h"
 
 /*
@@ -9,7 +7,7 @@
 void Copter::failsafe_radio_on_event()
 {
     // if motors are not armed there is nothing to do
-    if( !motors.armed() ) {
+    if( !motors->armed() ) {
         return;
     }
 
@@ -22,9 +20,9 @@ void Copter::failsafe_radio_on_event()
             // continue landing
         } else {
             if (g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
-                set_mode_land_with_pause();
+                set_mode_land_with_pause(MODE_REASON_RADIO_FAILSAFE);
             } else {
-                set_mode_RTL_or_land_with_pause();
+                set_mode_RTL_or_land_with_pause(MODE_REASON_RADIO_FAILSAFE);
             }
         }
     }
@@ -52,14 +50,14 @@ void Copter::failsafe_battery_event(void)
     }
 
     // failsafe check
-    if (g.failsafe_battery_enabled != FS_BATT_DISABLED && motors.armed()) {
+    if (g.failsafe_battery_enabled != FS_BATT_DISABLED && motors->armed()) {
         if (should_disarm_on_failsafe()) {
             init_disarm_motors();
         } else {
             if (g.failsafe_battery_enabled == FS_BATT_RTL || control_mode == AUTO) {
-                set_mode_RTL_or_land_with_pause();
+                set_mode_RTL_or_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
             } else {
-                set_mode_land_with_pause();
+                set_mode_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
             }
         }
     }
@@ -68,7 +66,7 @@ void Copter::failsafe_battery_event(void)
     set_failsafe_battery(true);
 
     // warn the ground station and log to dataflash
-    gcs_send_text(MAV_SEVERITY_WARNING,"Low battery");
+    gcs().send_text(MAV_SEVERITY_WARNING,"Low battery");
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_BATT, ERROR_CODE_FAILSAFE_OCCURRED);
 
 }
@@ -99,11 +97,11 @@ void Copter::failsafe_gcs_check()
     }
 
     // do nothing if gcs failsafe already triggered or motors disarmed
-    if (failsafe.gcs || !motors.armed()) {
+    if (failsafe.gcs || !motors->armed()) {
         return;
     }
 
-    // GCS failsafe event has occured
+    // GCS failsafe event has occurred
     // update state, log to dataflash
     set_failsafe_gcs(true);
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_GCS, ERROR_CODE_FAILSAFE_OCCURRED);
@@ -112,52 +110,14 @@ void Copter::failsafe_gcs_check()
     hal.rcin->clear_overrides();
     failsafe.rc_override_active = false;
 
-    // This is how to handle a failsafe.
-    // use the throttle failsafe setting to decide what to do
-    switch(control_mode) {
-        case STABILIZE:
-        case ACRO:
-        case SPORT:
-            // if throttle is zero disarm motors
-            if (ap.throttle_zero || ap.land_complete) {
-                init_disarm_motors();
-            }else if(home_distance > FS_CLOSE_TO_HOME_CM) {
-                // switch to RTL or if that fails, LAND
-                set_mode_RTL_or_land_with_pause();
-            }else{
-                // We have no GPS or are very close to home so we will land
-                set_mode_land_with_pause();
-            }
-            break;
-        case AUTO:
-            // if mission has not started AND vehicle is landed, disarm motors
-            if (!ap.auto_armed && ap.land_complete) {
-                init_disarm_motors();
-            // if g.failsafe_gcs is 1 do RTL, 2 means continue with the mission
-            } else if (g.failsafe_gcs == FS_GCS_ENABLED_ALWAYS_RTL) {
-                if (home_distance > FS_CLOSE_TO_HOME_CM) {
-                    // switch to RTL or if that fails, LAND
-                    set_mode_RTL_or_land_with_pause();
-                }else{
-                    // We are very close to home so we will land
-                    set_mode_land_with_pause();
-                }
-            }
-            // if failsafe_throttle is 2 (i.e. FS_THR_ENABLED_CONTINUE_MISSION) no need to do anything
-            break;
-        default:
-            // used for AltHold, Guided, Loiter, RTL, Circle, Drift, Sport, Flip, Autotune, PosHold
-            // if landed disarm
-            if (ap.land_complete) {
-                init_disarm_motors();
-            } else if (home_distance > FS_CLOSE_TO_HOME_CM) {
-                // switch to RTL or if that fails, LAND
-                set_mode_RTL_or_land_with_pause();
-            }else{
-                // We have no GPS or are very close to home so we will land
-                set_mode_land_with_pause();
-            }
-            break;
+    if (should_disarm_on_failsafe()) {
+        init_disarm_motors();
+    } else {
+        if (control_mode == AUTO && g.failsafe_gcs == FS_GCS_ENABLED_CONTINUE_MISSION) {
+            // continue mission
+        } else if (g.failsafe_gcs != FS_GCS_DISABLED) {
+            set_mode_RTL_or_land_with_pause(MODE_REASON_GCS_FAILSAFE);
+        }
     }
 }
 
@@ -168,14 +128,90 @@ void Copter::failsafe_gcs_off_event(void)
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_GCS, ERROR_CODE_FAILSAFE_RESOLVED);
 }
 
+// executes terrain failsafe if data is missing for longer than a few seconds
+//  missing_data should be set to true if the vehicle failed to navigate because of missing data, false if navigation is proceeding successfully
+void Copter::failsafe_terrain_check()
+{
+    // trigger with 5 seconds of failures while in AUTO mode
+    bool valid_mode = (control_mode == AUTO || control_mode == GUIDED || control_mode == GUIDED_NOGPS || control_mode == RTL);
+    bool timeout = (failsafe.terrain_last_failure_ms - failsafe.terrain_first_failure_ms) > FS_TERRAIN_TIMEOUT_MS;
+    bool trigger_event = valid_mode && timeout;
+
+    // check for clearing of event
+    if (trigger_event != failsafe.terrain) {
+        if (trigger_event) {
+            failsafe_terrain_on_event();
+        } else {
+            Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_TERRAIN, ERROR_CODE_ERROR_RESOLVED);
+            failsafe.terrain = false;
+        }
+    }
+}
+
+// set terrain data status (found or not found)
+void Copter::failsafe_terrain_set_status(bool data_ok)
+{
+    uint32_t now = millis();
+
+    // record time of first and latest failures (i.e. duration of failures)
+    if (!data_ok) {
+        failsafe.terrain_last_failure_ms = now;
+        if (failsafe.terrain_first_failure_ms == 0) {
+            failsafe.terrain_first_failure_ms = now;
+        }
+    } else {
+        // failures cleared after 0.1 seconds of persistent successes
+        if (now - failsafe.terrain_last_failure_ms > 100) {
+            failsafe.terrain_last_failure_ms = 0;
+            failsafe.terrain_first_failure_ms = 0;
+        }
+    }
+}
+
+// terrain failsafe action
+void Copter::failsafe_terrain_on_event()
+{
+    failsafe.terrain = true;
+    gcs().send_text(MAV_SEVERITY_CRITICAL,"Failsafe: Terrain data missing");
+    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_TERRAIN, ERROR_CODE_FAILSAFE_OCCURRED);
+
+    if (should_disarm_on_failsafe()) {
+        init_disarm_motors();
+    } else if (control_mode == RTL) {
+        mode_rtl.restart_without_terrain();
+    } else {
+        set_mode_RTL_or_land_with_pause(MODE_REASON_TERRAIN_FAILSAFE);
+    }
+}
+
+// check for gps glitch failsafe
+void Copter::gpsglitch_check()
+{
+    // get filter status
+    nav_filter_status filt_status = inertial_nav.get_filter_status();
+    bool gps_glitching = filt_status.flags.gps_glitching;
+
+    // log start or stop of gps glitch.  AP_Notify update is handled from within AP_AHRS
+    if (ap.gps_glitching != gps_glitching) {
+        ap.gps_glitching = gps_glitching;
+        if (gps_glitching) {
+            Log_Write_Error(ERROR_SUBSYSTEM_GPS, ERROR_CODE_GPS_GLITCH);
+            gcs().send_text(MAV_SEVERITY_CRITICAL,"GPS Glitch");
+        } else {
+            Log_Write_Error(ERROR_SUBSYSTEM_GPS, ERROR_CODE_ERROR_RESOLVED);
+            gcs().send_text(MAV_SEVERITY_CRITICAL,"GPS Glitch cleared");
+        }
+    }
+}
+
 // set_mode_RTL_or_land_with_pause - sets mode to RTL if possible or LAND with 4 second delay before descent starts
 //  this is always called from a failsafe so we trigger notification to pilot
-void Copter::set_mode_RTL_or_land_with_pause()
+void Copter::set_mode_RTL_or_land_with_pause(mode_reason_t reason)
 {
     // attempt to switch to RTL, if this fails then switch to Land
-    if (!set_mode(RTL)) {
+    if (!set_mode(RTL, reason)) {
         // set mode to land will trigger mode change notification to pilot
-        set_mode_land_with_pause();
+        set_mode_land_with_pause(reason);
     } else {
         // alert pilot to mode change
         AP_Notify::events.failsafe_mode_change = 1;
@@ -183,21 +219,22 @@ void Copter::set_mode_RTL_or_land_with_pause()
 }
 
 bool Copter::should_disarm_on_failsafe() {
+    if (ap.in_arming_delay) {
+        return true;
+    }
+
     switch(control_mode) {
         case STABILIZE:
         case ACRO:
             // if throttle is zero OR vehicle is landed disarm motors
             return ap.throttle_zero || ap.land_complete;
-            break;
         case AUTO:
             // if mission has not started AND vehicle is landed, disarm motors
             return !ap.auto_armed && ap.land_complete;
-            break;
         default:
             // used for AltHold, Guided, Loiter, RTL, Circle, Drift, Sport, Flip, Autotune, PosHold
             // if landed disarm
             return ap.land_complete;
-            break;
     }
 }
 
