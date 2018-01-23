@@ -2,9 +2,9 @@
 
 COMPILER=g++-5
 LOCAL_APHOME="/home/moses/research/software/ap_plane3.5.1"
-SERVER_APHOME="/home/hhuang04/ap_plane_bug2835"
+SERVER_APHOME="/hom/hhuang04/ap_382"
 LOCAL_INSTR="/home/moses/research/software/codeinstrumenter"
-SERVER_INSTR="/home/hhuang04/instrumenter"
+SERVER_INSTR="/home/hhuang04/codeinstr"
 
 if [ "$1" == "local" ]; then
     AP_HOME=$LOCAL_APHOME
