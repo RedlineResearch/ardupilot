@@ -217,7 +217,8 @@ def run_step(step):
         "configure": not opts.no_configure,
     }
     if step == 'build.ArduPlane':
-        return util.build_SITL('bin/arduplane', **build_opts)
+        return util.build_SIL('ArduPlane', j=opts.j)
+        # return util.build_SITL('bin/arduplane', j=opts.j, debug=opts.debug)
 
     if step == 'build.APMrover2':
         return util.build_SITL('bin/ardurover', **build_opts)
