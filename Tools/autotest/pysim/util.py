@@ -130,11 +130,12 @@ def build_examples(board, j=None, debug=False, clean=False):
 def build_SIL(atype, target='sitl', j=1):
     '''build desktop SIL'''
     run_cmd("make clean", 
-            dir=reltopdir(atype),
+            reltopdir(atype),
             checkfail=True)
     # Will automatically fail
-    run_cmd("make -j%u %s" % (j, target),
-            dir=reltopdir(atype),
+    cmd = 'make -j {0} {1}'.format(j, target)
+    run_cmd(cmd,
+            reltopdir(atype),
             checkfail=False)
     return True
 
@@ -209,7 +210,6 @@ def start_SITL(binary, valgrind=False, gdb=False, wipe=False, synthetic_clock=Tr
         cmd.extend(['xterm', '-e', 'gdb', '-x', '/tmp/x.gdb', '--args'])
     
     cmd.append(binary)
-
     if wipe:
         cmd.append('-w')
     if synthetic_clock:
