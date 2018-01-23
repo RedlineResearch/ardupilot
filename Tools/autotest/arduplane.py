@@ -4,7 +4,7 @@ import math
 import os
 import shutil
 
-import util, pexpect, sys, time, math, shutil, os
+#import util, pexpect, sys, time, math, shutil, os
 from timeit import default_timer as timer
 from common import *
 from pymavlink import mavutil
@@ -782,7 +782,7 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
         fail_list.append("timeout")
 
     end = timer()
-    print '========== TOTAL TIME : {} ============'.format(end - start)
+    print('========== TOTAL TIME : {} ============'.format(end - start))
     mav.close()
     util.pexpect_close(mavproxy)
     util.pexpect_close(sitl)
