@@ -101,5 +101,6 @@ $(BUILDROOT)/make.flags: FORCE
 # common header for rules, prints what is being built
 define RULEHDR
 	@echo %% $(subst $(BUILDROOT)/,,$@)
+    @echo %% $(v)$(CXX) $(CXXFLAGS) -c -emit-llvm -o $@ $< $(SKETCH_INCLUDES)
 	@mkdir -p $(dir $@)
 endef
