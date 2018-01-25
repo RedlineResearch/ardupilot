@@ -551,8 +551,8 @@ def fly_mission(mavproxy, mav, filename, height_accuracy=-1, target_altitude=Non
      # wait for EKF to settle
     wait_seconds(mav, 15)
     
-    mavproxy.send('arm throttle\n')
-    mavproxy.expect('ARMED')    
+    #mavproxy.send('arm throttle\n')
+    #mavproxy.expect('ARMED')    
     
     mavproxy.send('wp load %s\n' % filename)
     mavproxy.expect('Flight plan received')
