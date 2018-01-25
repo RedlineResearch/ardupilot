@@ -427,6 +427,13 @@ def fly_mission(mavproxy, mav, filename, height_accuracy=-1, target_altitude=Non
     """Fly a mission from a file."""
     global homeloc
     print("Flying mission %s" % filename)
+    
+     # wait for EKF to settle
+    wait_seconds(mav, 15)
+    
+    #mavproxy.send('arm throttle\n')
+    #mavproxy.expect('ARMED')    
+    
     mavproxy.send('wp load %s\n' % filename)
     mavproxy.expect('Flight plan received')
     mavproxy.send('wp list\n')
