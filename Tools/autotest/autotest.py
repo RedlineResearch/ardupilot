@@ -309,7 +309,8 @@ def run_step(step):
         return arducopter.fly_CopterAVC(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb, frame=opts.frame)
 
     if step == 'fly.ArduPlane':
-        return arduplane.fly_ArduPlane(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb)
+        ap_path = util.reltopdir(os.path.join('tmp/ArduPlane.build2', 'ArduPlane.elf'))
+        return arduplane.fly_ArduPlane(ap_path, **fly_opts)
 
     if step == 'fly.QuadPlane':
         return quadplane.fly_QuadPlane(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb)
