@@ -200,7 +200,7 @@ def valgrind_log_filepath(binary, model):
 
 def start_SITL(binary, valgrind=False, gdb=False, wipe=False,
     synthetic_clock=True, home=None, model=None, speedup=1, defaults_file=None,
-               unhide_parameters=False, gdbserver=False):
+               unhide_parameters=False, gdbserver=False, elfname='ArduPlane', instance=0):
     """Launch a SITL instance."""
     cmd = []
     if valgrind and os.path.exists('/usr/bin/valgrind'):
@@ -234,6 +234,9 @@ def start_SITL(binary, valgrind=False, gdb=False, wipe=False,
         cmd.extend(['--defaults', defaults_file])
     if unhide_parameters:
         cmd.extend(['--unhide-groups'])
+    if instance > 0:
+        cmd.extend(['--instance', str(instance)])
+        
     print("Running: %s" % cmd_as_shell(cmd))
     first = cmd[0]
     rest = cmd[1:]
@@ -254,13 +257,15 @@ def start_SITL(binary, valgrind=False, gdb=False, wipe=False,
     return child
 
 
-def start_MAVProxy_SITL(atype, aircraft=None, setup=False, master='tcp:127.0.0.1:5760',
-                        options=None, logfile=sys.stdout):
+def start_MAVProxy_SITL(atype, aircraft=None, setup=False, master='tcp:127.0.0.1:',
+                        options=None, logfile=sys.stdout, port=5760, instance=0):
     """Launch mavproxy connected to a SITL instance."""
     import pexpect
     global close_list
     MAVPROXY = os.getenv('MAVPROXY_CMD', 'mavproxy.py')
-    cmd = MAVPROXY + ' --master=%s --out=127.0.0.1:14550' % master
+    master_and_port = master + str(port+10*instance)
+    outport = 14550
+    cmd = MAVPROXY + ' --master={0} --out=127.0.0.1:{1}'.format(master_and_port, outport)
     if setup:
         cmd += ' --setup'
     if aircraft is None:

@@ -565,7 +565,7 @@ def fly_mission(mavproxy, mav, filename, height_accuracy=-1, target_altitude=Non
     # timeout is the number of seconds that the command should finish entirely
     if not wait_waypoint(mav, 1, 6, max_dist=300):
         return False
-    if not wait_groundspeed(mav, 0, 0.5, timeout=60):
+    if not wait_groundspeed(mav, 0, 0.5, timeout=360):
         return False
     mavproxy.expect("Auto disarmed")
     print("Mission OK")
@@ -667,7 +667,8 @@ def generate_wpfile():
 
     return '{0},{1},585,354'.format(home_loc.deg_lat, LAND_LONG)
 
-def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=False, gdbserver=False, speedup=10):
+def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=False, gdbserver=False, speedup=1,
+                  wpfile='auto_mission.txt', elfname='ArduPlane.elf', instance=0):
     """Fly ArduPlane in SITL.
 
     you can pass viewerip as an IP address to optionally send fg and
@@ -679,16 +680,19 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
 #     HOME_LOCATION = generate_wpfile().strip(' ')
     HOME_LOCATION = "-35.402830,149.165222,585.40,354"
 
-    options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --streamrate=10'
+    mav_sitl_port = 5501 + 10*instance
+    mav_out_port = 19550 + 10*instance
+    options = '--sitl=127.0.0.1:{0} --out=127.0.0.1:{1} --streamrate=10'.format(mav_sitl_port, mav_out_port)
     if viewerip:
         options += " --out=%s:14550" % viewerip
     if use_map:
         options += ' --map'
 
     sitl = util.start_SITL(binary, model='plane-elevrev', home=HOME_LOCATION, speedup=speedup,
-                          valgrind=valgrind, gdb=gdb, gdbserver=gdbserver,
-                          defaults_file=os.path.join(testdir, 'default_params/plane-jsbsim.parm'))
-    mavproxy = util.start_MAVProxy_SITL('ArduPlane', options=options)
+                           valgrind=valgrind, gdb=gdb, gdbserver=gdbserver,
+                           defaults_file=os.path.join(testdir, 'default_params/plane-jsbsim.parm'),
+                           elfname=elfname, instance=instance)
+    mavproxy = util.start_MAVProxy_SITL('ArduPlane', options=options, instance=instance)
     mavproxy.expect('Telemetry log: (\S+)')
     logfile = mavproxy.match.group(1)
     print("LOGFILE %s" % logfile)
@@ -713,9 +717,9 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
 
     # get a mavlink connection going
     try:
-        mav = mavutil.mavlink_connection('127.0.0.1:19550', robust_parsing=True)
+        mav = mavutil.mavlink_connection('127.0.0.1:{0}'.format(mav_out_port), robust_parsing=True)
     except Exception as msg:
-        print("Failed to start mavlink connection on 127.0.0.1:19550" % msg)
+        print("Failed to start mavlink connection on 127.0.0.1:{0}".format(mav_out_port) % msg)
         raise
     mav.message_hooks.append(message_hook)
     mav.idle_hooks.append(idle_hook)
@@ -769,7 +773,7 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
 #         if not fly_CIRCLE(mavproxy, mav):
 #             print("Failed CIRCLE")
 #             failed = True
-        if not fly_mission(mavproxy, mav, os.path.join(testdir, WP_MISSION_FILENAME), height_accuracy = 10,
+        if not fly_mission(mavproxy, mav, os.path.join(testdir, wpfile), height_accuracy = 10,
                            target_altitude=homeloc.alt):
             print("Failed mission")
             failed = True
