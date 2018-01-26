@@ -438,7 +438,7 @@ def fly_mission(mavproxy, mav, filename, height_accuracy=-1, target_altitude=Non
     wait_mode(mav, 'AUTO')
     if not wait_waypoint(mav, 1, 7, max_dist=60):
         return False
-    if not wait_groundspeed(mav, 0, 0.5, timeout=60):
+    if not wait_groundspeed(mav, 0, 0.5, timeout=360):
         return False
     mavproxy.expect("Auto disarmed")
     print("Mission OK")
@@ -540,8 +540,8 @@ def generate_wpfile():
 
     return '{0},{1},585,354'.format(home_loc.deg_lat, LAND_LONG)
 
-
-def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=False, gdbserver=False, speedup=10):
+def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=False, gdbserver=False, speedup=1,
+                  wpfile='auto_mission.txt', elfname='ArduPlane.elf', instance=0):
     """Fly ArduPlane in SITL.
 
     you can pass viewerip as an IP address to optionally send fg and
@@ -553,7 +553,9 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
 #     HOME_LOCATION = generate_wpfile().strip(' ')
     HOME_LOCATION = "-35.402830,149.165222,585.40,354"
 
-    options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --streamrate=10'
+    mav_sitl_port = 5501 + 10*instance
+    mav_out_port = 19550 + 10*instance
+    options = '--sitl=127.0.0.1:{0} --out=127.0.0.1:{1} --streamrate=10'.format(mav_sitl_port, mav_out_port)
     if viewerip:
         options += " --out=%s:14550" % viewerip
     if use_map:
@@ -587,9 +589,9 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
 
     # get a mavlink connection going
     try:
-        mav = mavutil.mavlink_connection('127.0.0.1:19550', robust_parsing=True)
+        mav = mavutil.mavlink_connection('127.0.0.1:{0}'.format(mav_out_port), robust_parsing=True)
     except Exception as msg:
-        print("Failed to start mavlink connection on 127.0.0.1:19550" % msg)
+        print("Failed to start mavlink connection on 127.0.0.1:{0}".format(mav_out_port) % msg)
         raise
     mav.message_hooks.append(message_hook)
     mav.idle_hooks.append(idle_hook)
@@ -612,49 +614,38 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
         if not takeoff(mavproxy, mav):
             print("Failed takeoff")
             failed = True
-            fail_list.append("takeoff")
-        if not fly_left_circuit(mavproxy, mav):
-            print("Failed left circuit")
-            failed = True
-            fail_list.append("left_circuit")
-        if not axial_left_roll(mavproxy, mav, 1):
-            print("Failed left roll")
-            failed = True
-            fail_list.append("left_roll")
-        if not inside_loop(mavproxy, mav):
-            print("Failed inside loop")
-            failed = True
-            fail_list.append("inside_loop")
-        if not test_stabilize(mavproxy, mav):
-            print("Failed stabilize test")
-            failed = True
-            fail_list.append("stabilize")
-        if not test_acro(mavproxy, mav):
-            print("Failed ACRO test")
-            failed = True
-            fail_list.append("acro")
-        if not test_FBWB(mavproxy, mav):
-            print("Failed FBWB test")
-            failed = True
-            fail_list.append("fbwb")
-        if not test_FBWB(mavproxy, mav, mode='CRUISE'):
-            print("Failed CRUISE test")
-            failed = True
-            fail_list.append("cruise")
-        if not fly_RTL(mavproxy, mav):
-            print("Failed RTL")
-            failed = True
-            fail_list.append("RTL")
-        if not fly_LOITER(mavproxy, mav):
-            print("Failed LOITER")
-            failed = True
-            fail_list.append("LOITER")
-        if not fly_CIRCLE(mavproxy, mav):
-            print("Failed CIRCLE")
-            failed = True
-            fail_list.append("LOITER")
-        if not fly_mission(mavproxy, mav, os.path.join(testdir, "ap1.txt"), height_accuracy = 10,
-                           target_altitude=homeloc.alt+100):
+#         if not fly_left_circuit(mavproxy, mav):
+#             print("Failed left circuit")
+#             failed = True
+#         if not axial_left_roll(mavproxy, mav, 1):
+#             print("Failed left roll")
+#             failed = True
+#         if not inside_loop(mavproxy, mav):
+#             print("Failed inside loop")
+#             failed = True
+#         if not test_stabilize(mavproxy, mav):
+#             print("Failed stabilize test")
+#             failed = True
+#         if not test_acro(mavproxy, mav):
+#             print("Failed ACRO test")
+#             failed = True
+#         if not test_FBWB(mavproxy, mav):
+#             print("Failed FBWB test")
+#             failed = True
+#         if not test_FBWB(mavproxy, mav, mode='CRUISE'):
+#             print("Failed CRUISE test")
+#             failed = True
+#         if not fly_RTL(mavproxy, mav):
+#             print("Failed RTL")
+#             failed = True
+#         if not fly_LOITER(mavproxy, mav):
+#             print("Failed LOITER")
+#             failed = True
+#         if not fly_CIRCLE(mavproxy, mav):
+#             print("Failed CIRCLE")
+#             failed = True
+        if not fly_mission(mavproxy, mav, os.path.join(testdir, wpfile), height_accuracy = 10,
+                           target_altitude=homeloc.alt):
             print("Failed mission")
             failed = True
             fail_list.append("mission")

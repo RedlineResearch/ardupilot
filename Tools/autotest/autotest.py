@@ -160,7 +160,7 @@ def alarm_handler(signum, frame):
         pass
     sys.exit(1)
 
-def should_run_step(step):
+def skip_step(step):
     """See if a step should be skipped."""
     for skip in skipsteps:
         if fnmatch.fnmatch(step.lower(), skip.lower()):
@@ -259,7 +259,9 @@ def run_step(step):
 
     if step == 'fly.ArduPlane':
         ap_path = util.reltopdir(os.path.join('tmp/ArduPlane.build2', 'ArduPlane.elf'))
-        return arduplane.fly_ArduPlane(ap_path, **fly_opts)
+        print('Instnace number : {}'.format(opts.instance))
+        return arduplane.fly_ArduPlane(ap_path, wpfile=opts.wpfile,
+                                       elfname=opts.elfname, instance=opts.instance, **fly_opts)
 
     if step == 'fly.QuadPlane':
         return quadplane.fly_QuadPlane(binary, **fly_opts)
@@ -453,6 +455,7 @@ def run_tests(steps):
 
     return passed
 
+
 if __name__ == "__main__":
 ############## main program #############
     os.environ['PYTHONUNBUFFERED'] = '1'
@@ -491,7 +494,6 @@ if __name__ == "__main__":
     'defaults.ArduPlane',
     'fly.ArduPlane',
     'fly.QuadPlane',
-
     'build.APMrover2',
     'defaults.APMrover2',
     'drive.APMrover2',
