@@ -169,7 +169,10 @@ parser.add_option("--gdb", default=False, action='store_true', help='run ArduPil
 parser.add_option("--debug", default=False, action='store_true', help='make built binaries debug binaries')
 parser.add_option("-j", default=None, type='int', help='build CPUs')
 parser.add_option("--frame", type='string', default=None, help='specify frame type')
-
+parser.add_option("--wpfile", dest='wpfile', type=str, help='Name of wp file', default='auto_mission.txt')
+parser.add_option("--elfname", dest='elfname', type=str, help='Name of elf binary file', default='ArduPlane')
+parser.add_option("--instance", dest='instance', type=int, default=0, help='The instance number, defaults to 0')
+ 
 opts, args = parser.parse_args()
 
 
@@ -310,7 +313,9 @@ def run_step(step):
 
     if step == 'fly.ArduPlane':
         ap_path = util.reltopdir(os.path.join('tmp/ArduPlane.build2', 'ArduPlane.elf'))
-        return arduplane.fly_ArduPlane(ap_path, **fly_opts)
+        print('Instnace number : {}'.format(opts.instance))
+        return arduplane.fly_ArduPlane(ap_path, wpfile=opts.wpfile,
+                                       elfname=opts.elfname, instance=opts.instance, **fly_opts)
 
     if step == 'fly.QuadPlane':
         return quadplane.fly_QuadPlane(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb)
@@ -522,7 +527,6 @@ def run_tests(steps):
     write_fullresults()
 
     return passed
-
 
 util.mkdir_p(util.reltopdir('../buildlogs'))
 
