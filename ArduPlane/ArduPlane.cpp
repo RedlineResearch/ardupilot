@@ -109,8 +109,12 @@ void Plane::setup()
     scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks));
 }
 
+unsigned long long loopCount = 0;
+
 void Plane::loop()
 {
+    loopCount++;
+    
     uint32_t loop_us = 1000000UL / scheduler.get_loop_rate_hz();
 
     // wait for an INS sample
