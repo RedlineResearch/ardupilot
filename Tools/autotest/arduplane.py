@@ -472,7 +472,7 @@ def test_acro(mavproxy, mav, count=1):
     mavproxy.send('rc 3 1700\n')
     return wait_level_flight(mavproxy, mav)
 
-def test_CRUISE(mavproxy, mav, count=1, mode='CRUISE'):
+def test_CRUISE(mavproxy, mav, count=1, mode='CRUISE', heading=0):
     """Fly CRUISE mode."""
     mavproxy.send("mode %s\n" % mode)
     wait_mode(mav, mode)
@@ -485,6 +485,14 @@ def test_CRUISE(mavproxy, mav, count=1, mode='CRUISE'):
     mavproxy.send('rc 2 1500\n')
     wait_distance(mav, 50, accuracy=20)
 
+    # Making a turn according to the heading
+    print("Starting turn %u" % i)
+    mavproxy.send('rc 1 1800\n')
+    if not wait_heading(mav, heading, accuracy=10, timeout=100):
+        mavproxy.send('rc 1 1500\n')
+        return False
+    mavproxy.send('rc 1 1500\n')
+    
     m = mav.recv_match(type='VFR_HUD', blocking=True)
     initial_alt = m.alt
     print("Initial altitude %u\n" % initial_alt)
