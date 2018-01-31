@@ -144,7 +144,7 @@ def wait_ready_to_arm(mavproxy):
     # wait for EKF and GPS checks to pass
     mavproxy.expect('IMU0 is using GPS')
 
-def takeoff(mavproxy, mav):
+def takeoff(mavproxy, mav, takeoffalt=100):
     """Takeoff get to 30m altitude."""
 
     wait_ready_to_arm(mavproxy)
@@ -176,7 +176,7 @@ def takeoff(mavproxy, mav):
     mavproxy.send('rc 3 2000\n')
 
     # gain a bit of altitude
-    if not wait_altitude(mav, homeloc.alt+150, homeloc.alt+200, timeout=60):
+    if not wait_altitude(mav, homeloc.alt+takeoffalt, homeloc.alt+takeoffalt+50, timeout=100):
         return False
 
     # level off
@@ -794,7 +794,7 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
         homeloc = mav.location()
         print("Home location: %s" % homeloc)
         start = timer()
-        if not takeoff(mavproxy, mav):
+        if not takeoff(mavproxy, mav, takeoffalt=config_settings['start_altitude']):
             print("Failed takeoff")
             failed = True
 #         if not fly_left_circuit(mavproxy, mav):
@@ -827,7 +827,7 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
 #         if not fly_CIRCLE(mavproxy, mav):
 #             print("Failed CIRCLE")
 #             failed = True
-        if not test_CRUISE(mavproxy, mav):
+        if not test_CRUISE(mavproxy, mav, heading=config_settings['heading']):
             print("Failed CRUISE test")
             failed = True        
         # if not fly_mission(mavproxy, mav, os.path.join(testdir, wpfile), height_accuracy = 10,
