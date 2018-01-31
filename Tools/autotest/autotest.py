@@ -14,6 +14,7 @@ import signal
 import sys
 import time
 import traceback
+import json
 
 import apmrover2
 import arducopter
@@ -259,7 +260,7 @@ def run_step(step):
 
     if step == 'fly.ArduPlane':
         ap_path = util.reltopdir(os.path.join('tmp/ArduPlane.build2', 'ArduPlane.elf'))
-        print('Instnace number : {}'.format(opts.instance))
+        print('Instance number : {}'.format(opts.instance))
         return arduplane.fly_ArduPlane(ap_path, wpfile=opts.wpfile,
                                        elfname=opts.elfname, instance=opts.instance, **fly_opts)
 
