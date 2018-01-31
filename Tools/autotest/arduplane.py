@@ -544,18 +544,29 @@ def generate_wpfile():
 
     return '{0},{1},585,354'.format(home_loc.deg_lat, LAND_LONG)
 
+def parseConfigFile(filepath):
+    try:
+        with open(filepath, 'r') as infile:
+            config_file = json.load(infile)
+            return config_file
+    except IOError:
+        return None
+    
 def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=False, gdbserver=False, speedup=1,
-                  wpfile='auto_mission.txt', elfname='ArduPlane.elf', instance=0):
+                  wpfile='auto_mission.txt', elfname='ArduPlane.elf', instance=0, configfile='config.txt'):
     """Fly ArduPlane in SITL.
 
     you can pass viewerip as an IP address to optionally send fg and
     mavproxy packets too for local viewing of the flight in real time
     """
     global homeloc
+    print('Config file: {}'.format(configfile))
     
-    print("Generating mission file")
+#     print("Generating mission file")
 #     HOME_LOCATION = generate_wpfile().strip(' ')
-    HOME_LOCATION = "-35.402830,149.165222,585.40,354"
+    HOME_LOCATION = "-35.362881,149.165222,582,354"
+    #HOME_LOCATION = "-35.402830,149.165222,585.00,354"
+    
 
     mav_sitl_port = 5501 + 10*instance
     mav_out_port = 19550 + 10*instance

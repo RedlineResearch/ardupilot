@@ -14,6 +14,7 @@ import signal
 import sys
 import time
 import traceback
+import json
 
 import apmrover2
 import arducopter
@@ -172,7 +173,8 @@ parser.add_option("--frame", type='string', default=None, help='specify frame ty
 parser.add_option("--wpfile", dest='wpfile', type=str, help='Name of wp file', default='auto_mission.txt')
 parser.add_option("--elfname", dest='elfname', type=str, help='Name of elf binary file', default='ArduPlane')
 parser.add_option("--instance", dest='instance', type=int, default=0, help='The instance number, defaults to 0')
- 
+parser.add_option("--configfile", dest='configfile', type=str, help='Name of config file', default='config.txt')
+
 opts, args = parser.parse_args()
 
 
@@ -313,7 +315,7 @@ def run_step(step):
 
     if step == 'fly.ArduPlane':
         ap_path = util.reltopdir(os.path.join('tmp/ArduPlane.build2', 'ArduPlane.elf'))
-        print('Instnace number : {}'.format(opts.instance))
+        print('Instance number : {}'.format(opts.instance))
         return arduplane.fly_ArduPlane(ap_path, wpfile=opts.wpfile,
                                        elfname=opts.elfname, instance=opts.instance, **fly_opts)
 
