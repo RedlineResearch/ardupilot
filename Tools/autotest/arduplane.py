@@ -176,7 +176,7 @@ def takeoff(mavproxy, mav):
     mavproxy.send('rc 3 2000\n')
 
     # gain a bit of altitude
-    if not wait_altitude(mav, homeloc.alt+300, homeloc.alt+350, timeout=60):
+    if not wait_altitude(mav, homeloc.alt+150, homeloc.alt+200, timeout=60):
         return False
 
     # level off
@@ -215,8 +215,8 @@ def fly_RTL(mavproxy, mav):
     print("Flying home in RTL")
     mavproxy.send('switch 2\n')
     wait_mode(mav, 'RTL')
-    if not wait_location(mav, homeloc, accuracy=120,
-                         target_altitude=homeloc.alt+100, height_accuracy=20,
+    if not wait_location(mav, homeloc, accuracy=20,
+                         target_altitude=homeloc.alt, height_accuracy=20,
                          timeout=180):
         return False
     print("RTL Complete")
@@ -472,6 +472,34 @@ def test_acro(mavproxy, mav, count=1):
     mavproxy.send('rc 3 1700\n')
     return wait_level_flight(mavproxy, mav)
 
+def test_CRUISE(mavproxy, mav, count=1, mode='CRUISE'):
+    """Fly CRUISE mode."""
+    mavproxy.send("mode %s\n" % mode)
+    wait_mode(mav, mode)
+    mavproxy.send('rc 3 1700\n')
+    mavproxy.send('rc 2 1500\n')
+
+    m = mav.recv_match(type='VFR_HUD', blocking=True)
+    initial_alt = m.alt
+    print("Initial altitude %u\n" % initial_alt)
+
+    if not wait_distance(mav, 8000, accuracy=20, timeout=500):
+        return False
+
+    m = mav.recv_match(type='VFR_HUD', blocking=True)
+    final_alt = m.alt
+    print("Final altitude %u initial %u\n" % (final_alt, initial_alt))
+
+    # back to FBWA
+    mavproxy.send('mode FBWA\n')
+    wait_mode(mav, 'FBWA')
+
+    if abs(final_alt - initial_alt) > 20:
+        print("Failed to maintain altitude")
+        return False
+
+    return wait_level_flight(mavproxy, mav)
+
 
 def test_FBWB(mavproxy, mav, count=1, mode='FBWB'):
     """Fly FBWB or CRUISE mode."""
@@ -563,7 +591,7 @@ def fly_mission(mavproxy, mav, filename, height_accuracy=-1, target_altitude=Non
     
     # max_dist determines when it finishes the way point
     # timeout is the number of seconds that the command should finish entirely
-    if not wait_waypoint(mav, 1, 6, max_dist=300):
+    if not wait_waypoint(mav, 1, 1, max_dist=100):
         return False
     if not wait_groundspeed(mav, 0, 0.5, timeout=360):
         return False
@@ -678,7 +706,8 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
     
     print("Generating mission file")
 #     HOME_LOCATION = generate_wpfile().strip(' ')
-    HOME_LOCATION = "-35.402830,149.165222,585.40,354"
+    HOME_LOCATION = "-35.362881,149.165222,582,354"
+    #HOME_LOCATION = "-35.402830,149.165222,585.00,354"
 
     mav_sitl_port = 5501 + 10*instance
     mav_out_port = 19550 + 10*instance
@@ -761,9 +790,9 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
 #         if not test_FBWB(mavproxy, mav):
 #             print("Failed FBWB test")
 #             failed = True
-#         if not test_FBWB(mavproxy, mav, mode='CRUISE'):
-#             print("Failed CRUISE test")
-#             failed = True
+#        if not test_FBWB(mavproxy, mav, mode='CRUISE'):
+#            print("Failed CRUISE test")
+#            failed = True
 #         if not fly_RTL(mavproxy, mav):
 #             print("Failed RTL")
 #             failed = True
@@ -773,10 +802,13 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
 #         if not fly_CIRCLE(mavproxy, mav):
 #             print("Failed CIRCLE")
 #             failed = True
-        if not fly_mission(mavproxy, mav, os.path.join(testdir, wpfile), height_accuracy = 10,
-                           target_altitude=homeloc.alt):
-            print("Failed mission")
-            failed = True
+        if not test_CRUISE(mavproxy, mav):
+            print("Failed CRUISE test")
+            failed = True        
+        # if not fly_mission(mavproxy, mav, os.path.join(testdir, wpfile), height_accuracy = 10,
+        #                    target_altitude=homeloc.alt):
+        #     print("Failed mission")
+        #     failed = True
 #         if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/ArduPlane-log.bin")):
 #             print("Failed log download")
 #             failed = True
