@@ -176,6 +176,7 @@ def takeoff(mavproxy, mav, takeoffalt=100):
     mavproxy.send('rc 3 2000\n')
 
     # gain a bit of altitude
+    print('Takeoff altitude: {}'.format(takeoffalt))
     if not wait_altitude(mav, homeloc.alt+takeoffalt, homeloc.alt+takeoffalt+50, timeout=100):
         return False
 
@@ -488,6 +489,7 @@ def test_CRUISE(mavproxy, mav, count=1, mode='CRUISE', heading=0):
     # Making a turn according to the heading
     print("Starting turn %u" % i)
     mavproxy.send('rc 1 1800\n')
+    print('Waiting for heading :{0}'.format(heading))
     if not wait_heading(mav, heading, accuracy=10, timeout=100):
         mavproxy.send('rc 1 1500\n')
         return False
