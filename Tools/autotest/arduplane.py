@@ -718,6 +718,8 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
     """
     global homeloc
     print('Config file: {}'.format(configfile))
+    config_settings = parseConfigFile(configfile)
+    print(config_settings)
     
 #     print("Generating mission file")
 #     HOME_LOCATION = generate_wpfile().strip(' ')
