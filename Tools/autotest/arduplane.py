@@ -1,5 +1,6 @@
 # Fly ArduPlane in SITL
 from __future__ import print_function
+import json
 import math
 import os
 import shutil
@@ -487,7 +488,7 @@ def test_CRUISE(mavproxy, mav, count=1, mode='CRUISE', heading=0):
     wait_distance(mav, 50, accuracy=20)
 
     # Making a turn according to the heading
-    print("Starting turn %u" % i)
+    print("Starting turn ...")
     mavproxy.send('rc 1 1800\n')
     print('Waiting for heading :{0}'.format(heading))
     if not wait_heading(mav, heading, accuracy=10, timeout=100):
