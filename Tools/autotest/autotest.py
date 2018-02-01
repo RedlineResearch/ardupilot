@@ -14,6 +14,7 @@ import signal
 import sys
 import time
 import traceback
+import json
 
 import apmrover2
 import arducopter
@@ -253,7 +254,7 @@ def run_step(step):
 
     if step == 'fly.ArduPlane':
         ap_path = util.reltopdir(os.path.join('tmp/ArduPlane.build2', 'ArduPlane.elf'))
-        print('Instnace number : {}'.format(opts.instance))
+        print('Instance number : {}'.format(opts.instance))
         return arduplane.fly_ArduPlane(ap_path, wpfile=opts.wpfile,
                                        elfname=opts.elfname, instance=opts.instance, **fly_opts)
 
@@ -448,7 +449,7 @@ def run_tests(steps):
     write_fullresults()
 
     return passed
-
+    
 if __name__ == "__main__":
 ############## main program #############
     os.environ['PYTHONUNBUFFERED'] = '1'
@@ -472,7 +473,8 @@ if __name__ == "__main__":
     parser.add_option("-j", default=None, type='int', help='build CPUs')
     parser.add_option("--frame", type='string', default=None, help='specify frame type')
     parser.add_option("--gdbserver", default=False, action='store_true', help='run ArduPilot binaries under gdbserver')
-
+    parser.add_option("--configfile", dest='configfile', type=str, help='Name of config file', default='config.txt')
+    
     opts, args = parser.parse_args()
 
 
