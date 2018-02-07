@@ -118,9 +118,9 @@ def fly_LOITER(mavproxy, mav, num_circles=4, bank_angle=10):
     print("Initial altitude %u\n" % initial_alt)
 
     while num_circles > 0:
-        if not wait_heading(mav, 0, accuracy=10, timeout=60):
+        if not wait_heading(mav, 0, accuracy=10, timeout=90):
             return False
-        if not wait_heading(mav, 180, accuracy=10, timeout=60):
+        if not wait_heading(mav, 180, accuracy=10, timeout=90):
             return False
         num_circles -= 1
         print("Loiter %u circles left" % num_circles)
