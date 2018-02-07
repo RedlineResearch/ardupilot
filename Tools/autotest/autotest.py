@@ -316,9 +316,8 @@ def run_step(step):
     if step == 'fly.ArduPlane':
         ap_path = util.reltopdir(os.path.join('tmp/ArduPlane.build2', 'ArduPlane.elf'))
         print('Instance number : {}'.format(opts.instance))
-        return arduplane.fly_ArduPlane(ap_path, wpfile=opts.wpfile,
-                                       elfname=opts.elfname, instance=opts.instance,
-                                       configfile=opts.configfile, **fly_opts)
+        return arduplane.fly_ArduPlane(ap_path, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb,
+                                       wpfile=opts.wpfile, elfname=opts.elfname, instance=opts.instance, configfile=opts.configfile)
 
     if step == 'fly.QuadPlane':
         return quadplane.fly_QuadPlane(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb)

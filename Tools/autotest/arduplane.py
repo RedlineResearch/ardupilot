@@ -105,6 +105,9 @@ def fly_RTL(mavproxy, mav):
 
 def fly_LOITER(mavproxy, mav, num_circles=4):
     """Loiter where we are."""
+    print("Changing parameter for bug6377")
+    mavproxy.send('param set NAVL1_LIM_BANK 10\n')
+    
     print("Testing LOITER for %u turns" % num_circles)
     mavproxy.send('loiter\n')
     wait_mode(mav, 'LOITER')
@@ -626,6 +629,7 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
             mav.wait_gps_fix()
         homeloc = mav.location()
         print("Home location: %s" % homeloc)
+        start = timer()
         if not takeoff(mavproxy, mav):
             print("Failed takeoff")
             failed = True
@@ -653,21 +657,21 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
 #         if not fly_RTL(mavproxy, mav):
 #             print("Failed RTL")
 #             failed = True
-#         if not fly_LOITER(mavproxy, mav):
-#             print("Failed LOITER")
-#             failed = True
+        if not fly_LOITER(mavproxy, mav):
+            print("Failed LOITER")
+            failed = True
 #         if not fly_CIRCLE(mavproxy, mav):
 #             print("Failed CIRCLE")
 #             failed = True
-        if not fly_mission(mavproxy, mav, os.path.join(testdir, wpfile), height_accuracy = 10,
-                           target_altitude=homeloc.alt):
-            print("Failed mission")
-            failed = True
-            fail_list.append("mission")
-        if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/ArduPlane-log.bin")):
-            print("Failed log download")
-            failed = True
-            fail_list.append("log_download")
+        # if not fly_mission(mavproxy, mav, os.path.join(testdir, wpfile), height_accuracy = 10,
+        #                    target_altitude=homeloc.alt):
+        #     print("Failed mission")
+        #     failed = True
+        #     fail_list.append("mission")
+        # if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/ArduPlane-log.bin")):
+        #     print("Failed log download")
+        #     failed = True
+        #     fail_list.append("log_download")
     except pexpect.TIMEOUT as e:
         print("Failed with timeout")
         failed = True
