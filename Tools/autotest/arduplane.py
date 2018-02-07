@@ -1,5 +1,6 @@
 # Fly ArduPlane in SITL
 from __future__ import print_function
+import json
 import math
 import os
 import shutil
@@ -25,7 +26,7 @@ def wait_ready_to_arm(mavproxy):
     # wait for EKF and GPS checks to pass
     mavproxy.expect('IMU0 is using GPS')
 
-def takeoff(mavproxy, mav):
+def takeoff(mavproxy, mav, takeoffalt=100):
     """Takeoff get to 30m altitude."""
 
     wait_ready_to_arm(mavproxy)
@@ -56,7 +57,7 @@ def takeoff(mavproxy, mav):
     mavproxy.send('rc 3 2000\n')
 
     # gain a bit of altitude
-    if not wait_altitude(mav, homeloc.alt+300, homeloc.alt+350, timeout=60):
+    if not wait_altitude(mav, homeloc.alt+takeoffalt, homeloc.alt+takeoffalt+50, timeout=100):
         return False
 
     # level off
@@ -103,10 +104,10 @@ def fly_RTL(mavproxy, mav):
     return True
 
 
-def fly_LOITER(mavproxy, mav, num_circles=4):
+def fly_LOITER(mavproxy, mav, num_circles=4, bank_angle=10):
     """Loiter where we are."""
     print("Changing parameter for bug6377")
-    mavproxy.send('param set NAVL1_LIM_BANK 10\n')
+    mavproxy.send('param set NAVL1_LIM_BANK {}\n'.format(bank_angle))
     
     print("Testing LOITER for %u turns" % num_circles)
     mavproxy.send('loiter\n')
@@ -564,6 +565,8 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
     """
     global homeloc
     print('Config file: {}'.format(configfile))
+    config_settings = parseConfigFile(configfile)
+    print(config_settings)
     
 #     print("Generating mission file")
 #     HOME_LOCATION = generate_wpfile().strip(' ')
@@ -579,7 +582,7 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
     if use_map:
         options += ' --map'
 
-    sitl = util.start_SITL(binary, model='plane-elevrev', home=HOME_LOCATION, speedup=10,
+    sitl = util.start_SITL(binary, model='plane-elevrev', home=HOME_LOCATION, speedup=speedup,
                           valgrind=valgrind, gdb=gdb,
                            defaults_file=os.path.join(testdir, 'default_params/plane-jsbsim.parm'), elfname=elfname, instance=instance)
     mavproxy = util.start_MAVProxy_SITL('ArduPlane', options=options, instance=instance)
@@ -630,7 +633,7 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
         homeloc = mav.location()
         print("Home location: %s" % homeloc)
         start = timer()
-        if not takeoff(mavproxy, mav):
+        if not takeoff(mavproxy, mav, takeoffalt=config_settings['start_altitude']):
             print("Failed takeoff")
             failed = True
 #         if not fly_left_circuit(mavproxy, mav):
@@ -657,7 +660,7 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
 #         if not fly_RTL(mavproxy, mav):
 #             print("Failed RTL")
 #             failed = True
-        if not fly_LOITER(mavproxy, mav):
+        if not fly_LOITER(mavproxy, mav, bank_angle=config_settings['bank_angle']):
             print("Failed LOITER")
             failed = True
 #         if not fly_CIRCLE(mavproxy, mav):
