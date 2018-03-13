@@ -60,7 +60,7 @@ endif
 
 CPUFLAGS     = -D_GNU_SOURCE
 CPULDFLAGS   = -g
-OPTFLAGS     ?= -O3 -g
+OPTFLAGS     ?= -O0 -g
 
 CXXFLAGS        =   -g $(CPUFLAGS) $(DEFINES) $(OPTFLAGS)
 CXXFLAGS       +=   -std=gnu++11 $(WARNFLAGS) $(WARNFLAGSCXX) $(DEPFLAGS) $(CXXOPTS)
