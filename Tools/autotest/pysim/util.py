@@ -201,7 +201,7 @@ def valgrind_log_filepath(binary, model):
 
 
 def start_SITL(binary, valgrind=False, gdb=False, wipe=False, synthetic_clock=True, home=None, model=None,
-               speedup=1, defaults_file=None, unhide_parameters=False, elfname='ArduPlane', instance=0):
+               speedup=1, gdbserver=False, defaults_file=None, unhide_parameters=False, elfname='ArduPlane', instance=0):
     """Launch a SITL instance."""
     cmd = []
     if valgrind and os.path.exists('/usr/bin/valgrind'):
