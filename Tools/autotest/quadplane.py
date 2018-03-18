@@ -30,15 +30,15 @@ def fly_mission(mavproxy, mav, filename, fence, height_accuracy=-1):
     mavproxy.expect('Requesting [0-9]+ waypoints')
     mavproxy.send('mode AUTO\n')
     wait_mode(mav, 'AUTO')
-    if not wait_waypoint(mav, 1, 19, max_dist=60, timeout=1200):
+    if not wait_waypoint(mav, 1, 3, max_dist=60, timeout=120):
         return False
-    mavproxy.expect('DISARMED')
-    # wait for blood sample here
-    mavproxy.send('wp set 20\n')
-    mavproxy.send('arm throttle\n')
-    mavproxy.expect('ARMED')
-    if not wait_waypoint(mav, 20, 34, max_dist=60, timeout=1200):
-        return False
+    # mavproxy.expect('DISARMED')
+    # # wait for blood sample here
+    # mavproxy.send('wp set 20\n')
+    # mavproxy.send('arm throttle\n')
+    # mavproxy.expect('ARMED')
+    # if not wait_waypoint(mav, 20, 34, max_dist=60, timeout=1200):
+    #     return False
     mavproxy.expect('DISARMED')
     print("Mission OK")
     return True
