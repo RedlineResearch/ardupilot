@@ -44,15 +44,17 @@ def fly_mission(mavproxy, mav, filename, fence, height_accuracy=-1):
     return True
 
 
-def fly_QuadPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=False, gdbserver=False, speedup=10):
+def fly_QuadPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=False, gdbserver=False, speedup=1,
+                  wpfile='auto_mission.txt', instance=0, configfile='config.txt'):
     """Fly QuadPlane in SITL.
 
     you can pass viewerip as an IP address to optionally send fg and
     mavproxy packets too for local viewing of the flight in real time.
     """
     global homeloc
-
-    options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --streamrate=10'
+    mav_sitl_port = 5501 + 10*instance
+    mav_out_port = 19550 + 10*instance
+    options = '--sitl=127.0.0.1:{0} --out=127.0.0.1:{1} --streamrate=10'.format(mav_sitl_port, mav_out_port)
     if viewerip:
         options += " --out=%s:14550" % viewerip
     if use_map:
@@ -60,20 +62,20 @@ def fly_QuadPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
 
     sitl = util.start_SITL(binary, model='quadplane', wipe=True, home=HOME_LOCATION, speedup=speedup,
                            defaults_file=os.path.join(testdir, 'default_params/quadplane.parm'),
-                           valgrind=valgrind, gdb=gdb, gdbserver=gdbserver)
-    mavproxy = util.start_MAVProxy_SITL('QuadPlane', options=options)
+                           valgrind=valgrind, gdb=gdb, gdbserver=gdbserver, instance=instance)
+    mavproxy = util.start_MAVProxy_SITL('QuadPlane', options=options, instance=instance)
     mavproxy.expect('Telemetry log: (\S+)')
     logfile = mavproxy.match.group(1)
     print("LOGFILE %s" % logfile)
 
-    buildlog = util.reltopdir("../buildlogs/QuadPlane-test.tlog")
-    print("buildlog=%s" % buildlog)
-    if os.path.exists(buildlog):
-        os.unlink(buildlog)
-    try:
-        os.link(logfile, buildlog)
-    except Exception:
-        pass
+    # buildlog = util.reltopdir("../buildlogs/QuadPlane-test.tlog")
+    # print("buildlog=%s" % buildlog)
+    # if os.path.exists(buildlog):
+    #     os.unlink(buildlog)
+    # try:
+    #     os.link(logfile, buildlog)
+    # except Exception:
+    #     pass
 
     util.expect_setup_callback(mavproxy, expect_callback)
 
@@ -86,7 +88,7 @@ def fly_QuadPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
 
     # get a mavlink connection going
     try:
-        mav = mavutil.mavlink_connection('127.0.0.1:19550', robust_parsing=True)
+        mav = mavutil.mavlink_connection('127.0.0.1:{0}'.format(mav_out_port), robust_parsing=True)
     except Exception as msg:
         print("Failed to start mavlink connection on 127.0.0.1:19550" % msg)
         raise
@@ -107,13 +109,12 @@ def fly_QuadPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
         print("Home location: %s" % homeloc)
 
         # wait for EKF and GPS checks to pass
-        wait_seconds(mav, 30)
+        wait_seconds(mav, 60)
 
         mavproxy.send('arm throttle\n')
         mavproxy.expect('ARMED')
 
-        if not fly_mission(mavproxy, mav,
-                           os.path.join(testdir, "ArduPlane-Missions/Dalby-OBC2016.txt"),
+        if not fly_mission(mavproxy, mav, os.path.join(testdir, wpfile),
                            os.path.join(testdir, "ArduPlane-Missions/Dalby-OBC2016-fence.txt")):
             print("Failed mission")
             failed = True
