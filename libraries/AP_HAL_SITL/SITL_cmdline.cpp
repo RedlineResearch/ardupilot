@@ -9,7 +9,6 @@
 #include "HAL_SITL_Class.h"
 #include "UARTDriver.h"
 #include <stdio.h>
-#include <stdlib.h>
 #include <signal.h>
 #include <unistd.h>
 #include <AP_HAL/utility/getopt_cpp.h>
@@ -143,8 +142,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             _base_port  += _instance * 10;
             _rcout_port += _instance * 10;
             _simin_port += _instance * 10;
-            srand(_instance * 10);
-            fprintf(stdout, "Random Seed is %d\n", _instance * 10);
         }
         break;
         case 'P':
