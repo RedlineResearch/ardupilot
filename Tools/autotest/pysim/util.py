@@ -228,7 +228,7 @@ def start_SITL(binary, valgrind=False, gdb=False, wipe=False, synthetic_clock=Tr
     if instance > 0:
         cmd.extend(['--instance', str(instance)])
         
-    print("Running: %s" % cmd_as_shell(cmd))
+    print('Running: {}'.format(cmd))
     first = cmd[0]
     rest = cmd[1:]
     child = pexpect.spawn(first, rest, logfile=sys.stdout, encoding=ENCODING, timeout=5)
@@ -264,6 +264,7 @@ def start_MAVProxy_SITL(atype, aircraft=None, setup=False, master='tcp:127.0.0.1
     cmd += ' --aircraft=%s' % aircraft
     if options is not None:
         cmd += ' ' + options
+    print('MAVProxy cmd: {}'.format(cmd))
     ret = pexpect.spawn(cmd, logfile=logfile, encoding=ENCODING, timeout=60)
     ret.delaybeforesend = 0
     pexpect_autoclose(ret)
