@@ -21,7 +21,7 @@ WIND = "0,180,0.2"  # speed,direction,variance
 
 homeloc = None
 
-def takeoff(mavproxy, mav):
+def takeoff(mavproxy, mav, takeoffalt=100):
     """Takeoff get to 30m altitude."""
 
     wait_ready_to_arm(mav)
@@ -52,7 +52,7 @@ def takeoff(mavproxy, mav):
     mavproxy.send('rc 3 2000\n')
 
     # gain a bit of altitude
-    if not wait_altitude(mav, homeloc.alt+300, homeloc.alt+350, timeout=60):
+    if not wait_altitude(mav, homeloc.alt+takeoffalt, homeloc.alt+takeoffalt+50, timeout=100):
         return False
 
     # level off
@@ -99,8 +99,11 @@ def fly_RTL(mavproxy, mav):
     return True
 
 
-def fly_LOITER(mavproxy, mav, num_circles=4):
+def fly_LOITER(mavproxy, mav, num_circles=4, bank_angle=10):
     """Loiter where we are."""
+    print("Changing parameter for bug6377")
+    mavproxy.send('param set NAVL1_LIM_BANK {}\n'.format(bank_angle))
+
     print("Testing LOITER for %u turns" % num_circles)
     mavproxy.send('loiter\n')
     wait_mode(mav, 'LOITER')
@@ -110,9 +113,9 @@ def fly_LOITER(mavproxy, mav, num_circles=4):
     print("Initial altitude %u\n" % initial_alt)
 
     while num_circles > 0:
-        if not wait_heading(mav, 0, accuracy=10, timeout=60):
+        if not wait_heading(mav, 0, accuracy=10, timeout=90):
             return False
-        if not wait_heading(mav, 180, accuracy=10, timeout=60):
+        if not wait_heading(mav, 180, accuracy=10, timeout=90):
             return False
         num_circles -= 1
         print("Loiter %u circles left" % num_circles)
@@ -549,15 +552,22 @@ def parseConfigFile(filepath):
         return None
     
 def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=False, gdbserver=False, speedup=1,
-                  wpfile='auto_mission.txt', elfname='ArduPlane.elf', instance=0, configfile='config.txt'):
+                  wpfile='auto_mission.txt', elfname='ArduPlane.elf', instance=0, configfile='config.txt', 
+                  bugID=6637):
+    
     """Fly ArduPlane in SITL.
 
     you can pass viewerip as an IP address to optionally send fg and
     mavproxy packets too for local viewing of the flight in real time
     """
     global homeloc
-    print('Config file: {}'.format(configfile))
     
+    print('BUG ID: {}'.format(bugID))
+    if (bugID == 6637):
+        print('Config file: {}'.format(configfile))
+        config_settings = parseConfigFile(configfile)
+        print(config_settings)
+        
 #     print("Generating mission file")
 #     HOME_LOCATION = generate_wpfile().strip(' ')
     HOME_LOCATION = "-35.362881,149.165222,582,354"
@@ -622,9 +632,22 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
             mav.wait_gps_fix()
         homeloc = mav.location()
         print("Home location: %s" % homeloc)
-        if not takeoff(mavproxy, mav):
-            print("Failed takeoff")
-            failed = True
+        if (bugID == 6637):
+            if not takeoff(mavproxy, mav, takeoffalt=config_settings['start_altitude']):
+                print("Failed takeoff")
+                failed = True
+            if not fly_LOITER(mavproxy, mav, bank_angle=config_settings['bank_angle']):
+                print("Failed LOITER")
+                failed = True
+        else:
+            if not takeoff(mavproxy, mav):
+                print("Failed takeoff")
+                failed = True
+            if not fly_mission(mavproxy, mav, os.path.join(testdir, wpfile), height_accuracy = 10,
+                           target_altitude=homeloc.alt):
+                print("Failed mission")
+                failed = True
+                fail_list.append("mission")
 #         if not fly_left_circuit(mavproxy, mav):
 #             print("Failed left circuit")
 #             failed = True
@@ -655,15 +678,11 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
 #         if not fly_CIRCLE(mavproxy, mav):
 #             print("Failed CIRCLE")
 #             failed = True
-        if not fly_mission(mavproxy, mav, os.path.join(testdir, wpfile), height_accuracy = 10,
-                           target_altitude=homeloc.alt):
-            print("Failed mission")
-            failed = True
-            fail_list.append("mission")
-        if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/ArduPlane-log.bin")):
-            print("Failed log download")
-            failed = True
-            fail_list.append("log_download")
+        
+#         if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/ArduPlane-log.bin")):
+#             print("Failed log download")
+#             failed = True
+#             fail_list.append("log_download")
     except pexpect.TIMEOUT as e:
         print("Failed with timeout")
         failed = True

@@ -174,6 +174,8 @@ parser.add_option("--wpfile", dest='wpfile', type=str, help='Name of wp file', d
 parser.add_option("--elfname", dest='elfname', type=str, help='Name of elf binary file', default='ArduPlane')
 parser.add_option("--instance", dest='instance', type=int, default=0, help='The instance number, defaults to 0')
 parser.add_option("--configfile", dest='configfile', type=str, help='Name of config file', default='config.txt')
+parser.add_option("--bugID", dest='bugID', default='7062', choices=['6637','7062'], 
+                  help='The bugID, currently supports 6637 and 7062')
 
 opts, args = parser.parse_args()
 
@@ -317,7 +319,8 @@ def run_step(step):
         ap_path = util.reltopdir(os.path.join('tmp/ArduPlane.build2', 'ArduPlane.elf'))
         print('Instance number : {}'.format(opts.instance))
         return arduplane.fly_ArduPlane(ap_path, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb,
-                                       wpfile=opts.wpfile, elfname=opts.elfname, instance=opts.instance, configfile=opts.configfile)
+                                       wpfile=opts.wpfile, elfname=opts.elfname, instance=opts.instance, configfile=opts.configfile,
+                                       bugID=opts.bugID)
 
     if step == 'fly.QuadPlane':
         ap_path = util.reltopdir(os.path.join('tmp/ArduPlane.build2', 'ArduPlane.elf'))
