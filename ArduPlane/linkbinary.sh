@@ -43,8 +43,11 @@ echo "Build the list of files to instrument"
 # Current directory
 cd $AP_HOME/ArduPlane
 find . -name "*.cpp" | cut -d'/' -f 2- | grep -v "test" >> $flist_tmp
+find . -name "*.h" | cut -d'/' -f 2- | grep -v "test" >> $flist_tmp
+
 cd $AP_HOME/libraries
 find `pwd` -name "*.cpp" | grep -v "example" | egrep -v "c\+\+" | grep -v "benchmark" | grep -v "AC_" | grep -v "tests" | grep -v "AP_HAL_FLYMAPLE" | grep -v "AP_HAL_Linux" | grep -v "AP_HAL_PX4" | grep -v "AP_HAL_QURT" | grep -v "AP_HAL_VRBRAIN" | grep -v "utility/Print.cpp" >> $AP_HOME/ArduPlane/$flist_tmp
+find `pwd` -name "*.h" | grep -v "example" | egrep -v "c\+\+" | grep -v "benchmark" | grep -v "AC_" | grep -v "tests" | grep -v "AP_HAL_FLYMAPLE" | grep -v "AP_HAL_Linux" | grep -v "AP_HAL_PX4" | grep -v "AP_HAL_QURT" | grep -v "AP_HAL_VRBRAIN" | grep -v "utility/Print.cpp" >> $AP_HOME/ArduPlane/$flist_tmp
 
 cd $AP_HOME/ArduPlane
 echo "# This should contain the filename of the files that need to be instrumented" > $flist
