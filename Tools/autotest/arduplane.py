@@ -436,7 +436,7 @@ def fly_mission(mavproxy, mav, filename, height_accuracy=-1, target_altitude=Non
     mavproxy.expect('Requesting [0-9]+ waypoints')
     mavproxy.send('switch 1\n')  # auto mode
     wait_mode(mav, 'AUTO')
-    if not wait_waypoint(mav, 1, 7, max_dist=60):
+    if not wait_waypoint(mav, 1, 6, max_dist=60):
         return False
     if not wait_groundspeed(mav, 0, 0.5, timeout=360):
         return False
@@ -622,6 +622,7 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
             mav.wait_gps_fix()
         homeloc = mav.location()
         print("Home location: %s" % homeloc)
+        start = timer()
         if not takeoff(mavproxy, mav):
             print("Failed takeoff")
             failed = True

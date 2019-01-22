@@ -318,7 +318,8 @@ def run_step(step):
         ap_path = util.reltopdir(os.path.join('tmp/ArduPlane.build2', 'ArduPlane.elf'))
         print('Instance number : {}'.format(opts.instance))
         return arduplane.fly_ArduPlane(ap_path, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb,
-                                       wpfile=opts.wpfile, elfname=opts.elfname, instance=opts.instance, configfile=opts.configfile)
+                                       wpfile=opts.wpfile, elfname=opts.elfname, instance=opts.instance, configfile=opts.configfile,
+                                       speedup=opts.speedup)
 
     if step == 'fly.QuadPlane':
         ap_path = util.reltopdir(os.path.join('tmp/ArduPlane.build2', 'ArduPlane.elf'))
