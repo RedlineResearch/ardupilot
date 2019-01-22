@@ -4,6 +4,7 @@ import os
 import pexpect
 import shutil
 from pymavlink import mavutil
+from timeit import default_timer as timer
 
 from common import *
 from pysim import util
@@ -30,7 +31,7 @@ def fly_mission(mavproxy, mav, filename, fence, height_accuracy=-1):
     mavproxy.expect('Requesting [0-9]+ waypoints')
     mavproxy.send('mode AUTO\n')
     wait_mode(mav, 'AUTO')
-    if not wait_waypoint(mav, 1, 3, max_dist=60, timeout=120):
+    if not wait_waypoint(mav, 1, 3, max_dist=60, timeout=200):
         return False
     # mavproxy.expect('DISARMED')
     # # wait for blood sample here
@@ -39,7 +40,7 @@ def fly_mission(mavproxy, mav, filename, fence, height_accuracy=-1):
     # mavproxy.expect('ARMED')
     # if not wait_waypoint(mav, 20, 34, max_dist=60, timeout=1200):
     #     return False
-    mavproxy.expect('DISARMED')
+    mavproxy.expect('DISARMED', timeout=300)
     print("Mission OK")
     return True
 
@@ -114,6 +115,7 @@ def fly_QuadPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
         mavproxy.send('arm throttle\n')
         mavproxy.expect('ARMED')
 
+        start = timer()
         if not fly_mission(mavproxy, mav, os.path.join(testdir, wpfile),
                            os.path.join(testdir, "ArduPlane-Missions/Dalby-OBC2016-fence.txt")):
             print("Failed mission")
@@ -122,6 +124,8 @@ def fly_QuadPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
         print("Failed with timeout")
         failed = True
 
+    end = timer()
+    print('========== TOTAL TIME : {} ============'.format(end - start))
     mav.close()
     util.pexpect_close(mavproxy)
     util.pexpect_close(sitl)
