@@ -3,6 +3,8 @@ from __future__ import print_function
 import math
 import os
 import shutil
+import pexpect
+import json
 
 #import util, pexpect, sys, time, math, shutil, os
 from timeit import default_timer as timer
@@ -21,9 +23,16 @@ WIND = "0,180,0.2"  # speed,direction,variance
 
 homeloc = None
 
+def set_wind(mavproxy, parsed_config):
+    wind_dir = parsed_config['wind_dir']
+    wind_spd = parsed_config['wind_spd']
+    wind_turb = parsed_config['wind_turb']
+    mavproxy.send('param set SIM_WIND_DIR ' + str(wind_dir) + '\n')
+    mavproxy.send('param set SIM_WIND_SPD ' + str(wind_spd) + '\n')
+    mavproxy.send('param set SIM_WIND_TURB ' + str(wind_turb) + '\n')
+    
 def takeoff(mavproxy, mav):
-    """Takeoff get to 30m altitude."""
-
+    """Takeoff get to 30m altitude."""   
     wait_ready_to_arm(mav)
 
     mavproxy.send('arm throttle\n')
@@ -436,7 +445,7 @@ def fly_mission(mavproxy, mav, filename, height_accuracy=-1, target_altitude=Non
     mavproxy.expect('Requesting [0-9]+ waypoints')
     mavproxy.send('switch 1\n')  # auto mode
     wait_mode(mav, 'AUTO')
-    if not wait_waypoint(mav, 1, 6, max_dist=60):
+    if not wait_waypoint(mav, 1, 6, max_dist=60, timeout=600):
         return False
     if not wait_groundspeed(mav, 0, 0.5, timeout=360):
         return False
@@ -562,8 +571,11 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
 #     HOME_LOCATION = generate_wpfile().strip(' ')
     HOME_LOCATION = "-35.362881,149.165222,582,354"
     #HOME_LOCATION = "-35.402830,149.165222,585.00,354"
-    
-
+    parsed_config = parseConfigFile(configfile)
+    if (parsed_config is None):
+        print('Bad configuration file, exiting simulation')
+        exit()
+        
     mav_sitl_port = 5501 + 10*instance
     mav_out_port = 19550 + 10*instance
     options = '--sitl=127.0.0.1:{0} --out=127.0.0.1:{1} --streamrate=10'.format(mav_sitl_port, mav_out_port)
@@ -623,6 +635,7 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
         homeloc = mav.location()
         print("Home location: %s" % homeloc)
         start = timer()
+        set_wind(mavproxy, parsed_config)
         if not takeoff(mavproxy, mav):
             print("Failed takeoff")
             failed = True
@@ -661,10 +674,10 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
             print("Failed mission")
             failed = True
             fail_list.append("mission")
-        if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/ArduPlane-log.bin")):
-            print("Failed log download")
-            failed = True
-            fail_list.append("log_download")
+#         if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/ArduPlane-log.bin")):
+#             print("Failed log download")
+#             failed = True
+#             fail_list.append("log_download")
     except pexpect.TIMEOUT as e:
         print("Failed with timeout")
         failed = True
