@@ -26,15 +26,15 @@ rm -f $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_instr.bc
 rm -f $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_inject.bc $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_inject.s $AP_HOME/tmp/ArduPlane.build2/ArduPlane.elf
 llvm-link -o $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full.bc `find $AP_HOME/tmp/ArduPlane.build2/ -name "*.bc"`
 
-echo "Make sure that Instrumenter and Oscope API is built"
-cd $INSTRUMENTER
-make oscope
+# echo "Make sure that Instrumenter and Oscope API is built"
+# cd $INSTRUMENTER
+# make oscope
 
-if [ "$1" == "local" ]; then
-    make local_instr
-else
-    make server_instr
-fi
+# if [ "$1" == "local" ]; then
+#     make local_instr
+# else
+#     make server_instr
+# fi
 
 echo "Combine Ardupilot and Instrumentation Bitcodes"
 llvm-link -o $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_instr.bc $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full.bc $INSTRUMENTER/oscopeAPI.bc
@@ -60,8 +60,11 @@ echo "Inject instrumentation into Ardupilot bitcode"
 # $INSTRUMENTER/instrumenter $2 -instrIO -init_func=_ZN5Plane4loopEv -filelist=$AP_HOME/ArduPlane/$flist -o $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_inject.bc $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_instr.bc
 mv $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_instr.bc $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_inject.bc
 
+echo "Strip out debug symbols so that llc will not complain"
+opt -strip-debug -o $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_stripped.bc $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_inject.bc
+
 echo "Compiling to assembly"
-llc -o $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_inject.s $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_inject.bc 
+llc -o $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_inject.s $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_stripped.bc 
 
 echo "Compiling Assembly into ArduPlane.elf"
 $COMPILER -D_GNU_SOURCE  -g  -Wformat -Wshadow -Wpointer-arith -Wcast-align -Wlogical-op -Wwrite-strings -Wformat=2 -Wno-unused-parameter -o $AP_HOME/tmp/ArduPlane.build2/ArduPlane.elf $AP_HOME/tmp/ArduPlane.build2/ArduPlane_full_inject.s -lm -pthread
