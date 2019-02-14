@@ -31,8 +31,10 @@ def set_wind(mavproxy, parsed_config):
     mavproxy.send('param set SIM_WIND_SPD ' + str(wind_spd) + '\n')
     mavproxy.send('param set SIM_WIND_TURB ' + str(wind_turb) + '\n')
     
-def takeoff(mavproxy, mav):
-    """Takeoff get to 30m altitude."""   
+def takeoff(mavproxy, mav, parsed_config):
+    """Takeoff get to 30m altitude."""
+
+    start_alt = parsed_config["start_altitude"]
     wait_ready_to_arm(mav)
 
     mavproxy.send('arm throttle\n')
@@ -61,7 +63,7 @@ def takeoff(mavproxy, mav):
     mavproxy.send('rc 3 2000\n')
 
     # gain a bit of altitude
-    if not wait_altitude(mav, homeloc.alt+300, homeloc.alt+350, timeout=60):
+    if not wait_altitude(mav, homeloc.alt+start_alt, homeloc.alt+start_alt+50, timeout=60):
         return False
 
     # level off
@@ -445,7 +447,7 @@ def fly_mission(mavproxy, mav, filename, height_accuracy=-1, target_altitude=Non
     mavproxy.expect('Requesting [0-9]+ waypoints')
     mavproxy.send('switch 1\n')  # auto mode
     wait_mode(mav, 'AUTO')
-    if not wait_waypoint(mav, 1, 6, max_dist=60, timeout=600):
+    if not wait_waypoint(mav, 1, 6, max_dist=60, timeout=1000):
         return False
     if not wait_groundspeed(mav, 0, 0.5, timeout=360):
         return False
@@ -636,7 +638,7 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
         print("Home location: %s" % homeloc)
         start = timer()
         set_wind(mavproxy, parsed_config)
-        if not takeoff(mavproxy, mav):
+        if not takeoff(mavproxy, mav, parsed_config):
             print("Failed takeoff")
             failed = True
 #         if not fly_left_circuit(mavproxy, mav):
